@@ -5,8 +5,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class PublicSurfaceTests(unittest.TestCase):
-    def test_public_repo_has_required_non_legal_docs(self):
-        for name in ["README.md", "CHANGELOG.md", "CONTRIBUTING.md", ".gitignore"]:
+    def test_public_repo_has_required_docs(self):
+        for name in ["README.md", "CHANGELOG.md", "CONTRIBUTING.md", ".gitignore", "LICENSE"]:
             self.assertTrue((ROOT / name).is_file(), name)
 
     def test_readme_has_fast_install_and_product_boundary(self):
@@ -16,10 +16,12 @@ class PublicSurfaceTests(unittest.TestCase):
         self.assertIn("not", text)
         self.assertIn("autonomous executor", text)
 
-    def test_license_is_explicit_release_gate_until_selected(self):
-        text = (ROOT / "README.md").read_text(encoding="utf-8").lower()
-        self.assertIn("no license", text)
-        self.assertIn("release gate", text)
+    def test_license_is_apache_2(self):
+        license_text = (ROOT / "LICENSE").read_text(encoding="utf-8")
+        readme = (ROOT / "README.md").read_text(encoding="utf-8").lower()
+        self.assertIn("Apache License", license_text)
+        self.assertIn("Version 2.0", license_text)
+        self.assertIn("apache license 2.0", readme)
 
 
 if __name__ == "__main__":
