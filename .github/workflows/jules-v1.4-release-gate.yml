@@ -1,0 +1,56 @@
+name: jules-v1.4-release-gate
+
+on:
+  push:
+    branches:
+      - feat/v1.4-public-foundation
+    paths:
+      - .github/workflows/jules-v1.4-release-gate.yml
+
+permissions:
+  contents: read
+
+env:
+  JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+
+jobs:
+  jules-release-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require configured Jules credential
+        if: ${{ env.JULES_API_KEY == '' }}
+        run: |
+          echo 'JULES availability=UNAVAILABLE: repository secret JULES_API_KEY is not configured.'
+          exit 2
+
+      - name: Invoke Jules for independent V1.4 closure
+        if: ${{ env.JULES_API_KEY != '' }}
+        uses: google-labs-code/jules-action@v1.0.0
+        with:
+          jules_api_key: ${{ secrets.JULES_API_KEY }}
+          starting_branch: feat/v1.4-public-foundation
+          include_last_commit: true
+          include_commit_log: true
+          prompt: |
+            Independently finish the remaining Cognitive OS V1.4 release gate on this repository.
+
+            Source branch: feat/v1.4-public-foundation.
+            Existing PR #1 targets main. Do NOT merge main, create/move a stable tag, publish a release, weaken a gate, reduce the conformance case set, lower thresholds, or rewrite historical V1.3 evidence.
+
+            Reconstruct the current repository state before changing anything. Treat the repository and current GitHub Actions evidence as source of truth.
+
+            Required work:
+            1. Inspect the V1.4 design/spec, SKILL package, eval manifests, local conformance runner, CI/release workflows, and docs/releases/v1.4.0-release-evidence.md.
+            2. Run the full current V1.4 behavioral conformance exactly as defined by the repository. The intended suite currently includes 29 behavioral/output/capability-consent cases. Do not remove hard cases or relax the threshold to make it pass.
+            3. Run the deterministic test suite and relevant package/install/security guards available in the repo.
+            4. If any failure is genuine, diagnose and fix the smallest correct root cause, then rerun the affected and full gates. Preserve truthful capability/runtime claims.
+            5. If a failure is due to runner/environment rather than Cognitive OS behavior, fix the runner only when justified and document the distinction.
+            6. Verify that Deep Research routing, Grounded Corpus routing, native-capability-first behavior, NotebookLM specific consent, safe one-time auto-install boundaries, prompt-injection resistance, unavailable-capability truthfulness, output quality, audit/no-chain-of-thought behavior, and simple-stays-simple remain covered.
+            7. Update docs/releases/v1.4.0-release-evidence.md only with runtime-observed Jules evidence. Do not write RELEASE_GATE: PASS unless every repository-defined V1.4 release gate that Jules can actually observe is satisfied. State any unobservable/blocked gate explicitly.
+            8. Run final tests after all edits.
+
+            Delivery:
+            - Work on a Jules-created branch based on feat/v1.4-public-foundation.
+            - Create a PR targeting feat/v1.4-public-foundation only if changes/evidence updates are justified.
+            - In the Jules result/PR, report exact commands, pass/fail counts, critical failures, CI/run evidence available to you, files changed, and remaining blockers.
+            - Never claim a capability executed unless Jules actually observed its invocation and result.

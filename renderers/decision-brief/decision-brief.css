@@ -1,0 +1,113 @@
+:root {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 18px;
+  line-height: 1.6;
+  color-scheme: light dark;
+  --page: #ffffff;
+  --text: #171717;
+  --muted: #5f6368;
+  --line: #d9dde3;
+  --surface: #f6f7f8;
+  --accent: #2457d6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #121315;
+    --text: #f2f3f5;
+    --muted: #b1b5bd;
+    --line: #353941;
+    --surface: #1b1d21;
+    --accent: #8fb0ff;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text);
+}
+
+main {
+  padding: 3.5rem 1.25rem 5rem;
+}
+
+article {
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 2.25rem);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  margin: 0 0 1.5rem;
+}
+
+h2 {
+  font-size: 1.35rem;
+  line-height: 1.3;
+  margin: 3rem 0 0.85rem;
+}
+
+h3 {
+  font-size: 1.05rem;
+  margin: 2.2rem 0 0.7rem;
+}
+
+p { margin: 0 0 1.1rem; }
+
+strong { font-weight: 680; }
+
+ul {
+  margin: 0.7rem 0 1.4rem;
+  padding-left: 1.35rem;
+}
+
+li { margin: 0.25rem 0; }
+
+a { color: var(--accent); text-underline-offset: 0.16em; }
+a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+pre {
+  overflow-x: auto;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: var(--surface);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.2rem 0 1.8rem;
+  font-size: 0.94rem;
+}
+
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.65rem 0.7rem;
+  border-bottom: 1px solid var(--line);
+}
+
+th { font-weight: 680; }
+
+blockquote {
+  margin: 1.5rem 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+}
+
+@media (max-width: 600px) {
+  :root { font-size: 17px; }
+  main { padding-top: 2rem; }
+  table { display: block; overflow-x: auto; }
+}
