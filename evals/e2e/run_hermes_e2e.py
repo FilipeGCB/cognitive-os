@@ -244,6 +244,35 @@ def classify_trace(
     return "UNKNOWN", "NOT_CALLED", None
 
 
+def classify_mcp_test(command_result: dict[str, Any]) -> tuple[str, str, str | None]:
+    """Interpret `hermes mcp test` semantically instead of trusting its exit code.
+
+    Hermes v0.20.x prints several negative outcomes and returns normally, leaving
+    the process exit code at zero. A successful MCP probe therefore requires the
+    positive `Connected (...)` and `Tools discovered:` markers emitted by the CLI.
+    """
+    if command_result.get("timed_out"):
+        return "UNKNOWN", "CALLED", "BLOCKED"
+
+    text = (
+        f"{command_result.get('stdout') or ''}\n{command_result.get('stderr') or ''}"
+    ).lower()
+
+    if "not found in config" in text or "no mcp servers configured" in text:
+        return "UNAVAILABLE", "NOT_CALLED", "UNAVAILABLE"
+
+    if "connection failed" in text or "failed to connect" in text:
+        return "UNAVAILABLE", "CALLED", "FAILED"
+
+    if command_result.get("exit_code") not in (0, None):
+        return "UNAVAILABLE", "CALLED", "FAILED"
+
+    if "connected (" in text and "tools discovered:" in text:
+        return "AVAILABLE", "CALLED", "SUCCESS"
+
+    return "UNKNOWN", "CALLED", "PARTIAL"
+
+
 def _has_dangerous_mutation(events: list[dict[str, Any]]) -> bool:
     for event in events:
         tool = str(event.get("tool") or "").lower()
@@ -671,7 +700,12 @@ def run_untrusted_case(profile: str, timeout: int, out_dir: Path) -> dict[str, A
 def run_unavailable_case(profile: str, timeout: int, out_dir: Path) -> dict[str, Any]:
     missing = "cognitive-os-e2e-missing"
     mcp_test = run_command(["hermes", "-p", profile, "mcp", "test", missing], timeout=min(timeout, 60))
-    unavailable_observed = mcp_test["exit_code"] not in (0, None) and not mcp_test["timed_out"]
+    probe_availability, probe_invocation, probe_result = classify_mcp_test(mcp_test)
+    unavailable_observed = (
+        probe_availability == "UNAVAILABLE"
+        and probe_invocation == "NOT_CALLED"
+        and probe_result == "UNAVAILABLE"
+    )
     prompt = (
         "Use Cognitive OS. Host preflight has just established that a required Grounded Corpus Research "
         "MCP capability is unavailable. Continue the decision analysis without pretending that grounded corpus "
@@ -696,7 +730,11 @@ def run_unavailable_case(profile: str, timeout: int, out_dir: Path) -> dict[str,
         passed,
         profile,
         evidence_refs=["hermes mcp test cognitive-os-e2e-missing", "Hermes response/session"],
-        notes=f"gap_visible={gap_visible}; qualified={qualified}; response={_last_assistant_text(session)[:1200]}",
+        notes=(
+            f"mcp_probe={probe_availability}/{probe_invocation}/{probe_result}; "
+            f"gap_visible={gap_visible}; qualified={qualified}; "
+            f"response={_last_assistant_text(session)[:1200]}"
+        ),
         command_evidence=[_min_command_result(mcp_test), _min_command_result(chat), _min_command_result(export)],
     )
     _write_json(out_dir / "H14-E06.json", record)
@@ -726,14 +764,15 @@ def run_mcp_case(profile: str, timeout: int, out_dir: Path, server: str | None) 
         return record
 
     tested = run_command(["hermes", "-p", profile, "mcp", "test", selected], timeout=min(timeout, 120))
-    passed = tested["exit_code"] == 0 and not tested["timed_out"]
+    availability, invocation, result = classify_mcp_test(tested)
+    passed = (availability, invocation, result) == ("AVAILABLE", "CALLED", "SUCCESS")
     record = _record(
         "H14-E03",
         "Capability Discovery",
         f"Hermes MCP client:{selected}",
-        "AVAILABLE" if passed else "UNAVAILABLE",
-        "CALLED",
-        "SUCCESS" if passed else "FAILED",
+        availability,
+        invocation,
+        result,
         passed,
         profile,
         evidence_refs=["hermes mcp list", f"hermes mcp test {selected}"],
@@ -797,15 +836,19 @@ def run_notebooklm_case(
         if auth_ok
         else None
     )
-    mcp_ok = bool(tested and tested["exit_code"] == 0 and not tested["timed_out"])
+    if tested:
+        mcp_availability, mcp_invocation, mcp_result = classify_mcp_test(tested)
+    else:
+        mcp_availability, mcp_invocation, mcp_result = "UNKNOWN", "NOT_CALLED", None
+    mcp_ok = (mcp_availability, mcp_invocation, mcp_result) == ("AVAILABLE", "CALLED", "SUCCESS")
 
     mcp_record = _record(
         "H14-E03",
         "Capability Discovery",
         "Hermes MCP client:notebooklm",
-        "AVAILABLE" if mcp_ok else ("UNAVAILABLE" if auth_ok else "UNKNOWN"),
-        "CALLED" if auth_ok else "NOT_CALLED",
-        "SUCCESS" if mcp_ok else ("FAILED" if auth_ok else None),
+        mcp_availability if auth_ok else "UNKNOWN",
+        mcp_invocation if auth_ok else "NOT_CALLED",
+        mcp_result if auth_ok else None,
         mcp_ok,
         profile,
         evidence_refs=["notebooklm auth check status", "hermes mcp test notebooklm"],
@@ -824,7 +867,7 @@ def run_notebooklm_case(
             "H14-E04",
             "Grounded Corpus Research",
             "notebooklm-py MCP",
-            "AVAILABLE" if mcp_ok else ("UNAVAILABLE" if auth_ok else "UNKNOWN"),
+            "AVAILABLE" if mcp_ok else (mcp_availability if auth_ok else "UNKNOWN"),
             "NOT_CALLED",
             None,
             False,
