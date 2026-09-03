@@ -47,6 +47,31 @@ The base Python package is small. Upstream documents that interactive browser lo
 
 This is not treated as a silent auto-install candidate because external-account authentication is required even when local package footprint is modest.
 
+## Public CI package smoke
+
+Observed Cognitive OS CI evidence:
+
+- GitHub Actions workflow: `ci`
+- run: `33778607770`
+- head: `d8fbad235ae24022d56e3c2e822d71c20d24ddcf`
+- job: `notebooklm-adapter-smoke`
+- result: `success`
+
+That job installed exactly:
+
+```bash
+python -m pip install "notebooklm-py[mcp]==0.8.2"
+```
+
+and successfully exercised the package entrypoints:
+
+```bash
+notebooklm --version
+notebooklm-mcp --help
+```
+
+This proves package resolution and basic CLI/MCP entrypoint compatibility on the CI Ubuntu/Python 3.12 surface. It does **not** prove NotebookLM authentication, access to a real Google account, live notebook query behavior or the host-specific MCP toolset after connection.
+
 ## MCP security posture observed
 
 At `v0.8.2`, upstream documents:
@@ -96,4 +121,4 @@ Per supported host/surface:
 
 `test`
 
-The adapter is sufficiently identified and understood to remain a first-class candidate and to be offered behind explicit consent in development environments. It is **not yet labeled universally supported** because Cognitive OS has not completed its own supported-host installation/preflight matrix for this public repository.
+The adapter is sufficiently identified and understood to remain a first-class candidate and to be offered behind explicit consent in development environments. Package/entrypoint installation has now been proven on one clean CI surface, but it is **not yet labeled universally supported** because Cognitive OS has not completed an authenticated supported-host preflight matrix for this public repository.
