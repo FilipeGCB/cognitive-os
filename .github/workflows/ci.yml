@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -33,6 +33,9 @@ jobs:
       - name: Validate public package
         run: python tools/validate_public_package.py
 
+      - name: Public PII scan
+        run: python tools/scan_public_pii.py
+
       - name: Renderer smoke test
         run: |
           python renderers/decision-brief/render.py \
@@ -42,3 +45,42 @@ jobs:
 
       - name: Python compile check
         run: python -m compileall -q bootstrap evals renderers tests tools
+
+  install-smoke:
+    runs-on: ubuntu-latest
+    env:
+      DISABLE_TELEMETRY: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Verify skill discovery
+        run: npx -y skills@latest add ./skills --list
+
+      - name: Install for Codex
+        run: |
+          npx -y skills@latest add ./skills --skill cognitive-os --agent codex -y --copy
+          test -f .agents/skills/cognitive-os/SKILL.md
+
+      - name: Install for Claude Code
+        run: |
+          npx -y skills@latest add ./skills --skill cognitive-os --agent claude-code -y --copy
+          test -f .claude/skills/cognitive-os/SKILL.md
+
+      - name: Install for Gemini CLI
+        run: |
+          npx -y skills@latest add ./skills --skill cognitive-os --agent gemini-cli -y --copy
+          test -f .agents/skills/cognitive-os/SKILL.md
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
