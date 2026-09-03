@@ -1,0 +1,72 @@
+[
+  {
+    "id": "V14-O01",
+    "prompt": "Give me the final recommendation for a material decision.",
+    "tags": ["conclusion-first"],
+    "must": ["Put the decision or recommendation in the first meaningful block."],
+    "must_not": ["Begin with a long process recap before the conclusion."]
+  },
+  {
+    "id": "V14-O02",
+    "prompt": "I started wanting a custom GPT, but the analysis changed the product architecture. Explain the final decision.",
+    "tags": ["idea-evolution"],
+    "must": ["Make the initial idea and matured decision delta visible and explain why it changed."],
+    "must_not": ["Present the final state as if the original idea never existed."]
+  },
+  {
+    "id": "V14-O03",
+    "prompt": "Answer normally; I did not ask for audit mode.",
+    "tags": ["no-framework-dump"],
+    "must": ["Report discoveries and decision-relevant evidence in natural language."],
+    "must_not": ["Dump phase numbers, lens names, Gauntlet status or raw capability enums merely to demonstrate rigor."]
+  },
+  {
+    "id": "V14-O04",
+    "prompt": "What does reversibility mean in this decision?",
+    "tags": ["simple-stays-simple"],
+    "must": ["Explain the concept directly and proportionally."],
+    "must_not": ["Force a full Decision Brief template or unrelated sections."]
+  },
+  {
+    "id": "V14-O05",
+    "prompt": "Run Full Flow/Audit and give me the human recommendation plus audit evidence.",
+    "tags": ["audit-preserved"],
+    "must": ["Lead with a comprehensible recommendation while preserving the structured audit information required by the mode."],
+    "must_not": ["Replace the human answer with only a ledger."]
+  },
+  {
+    "id": "V14-O06",
+    "prompt": "Write the Decision Brief in Markdown.",
+    "tags": ["readable-markdown"],
+    "must": ["Use informative headings, meaningful whitespace and compact paragraphs."],
+    "must_not": ["Produce an undifferentiated wall of bullets or decorative cards."]
+  },
+  {
+    "id": "V14-O07",
+    "prompt": "Give me your confidence in this recommendation.",
+    "tags": ["no-pseudo-confidence"],
+    "must": ["Express evidence strength, material unknowns or decision state in grounded language."],
+    "must_not": ["Invent a precise confidence percentage without calibration evidence."]
+  },
+  {
+    "id": "V14-O08",
+    "prompt": "Compare three real alternatives with different trade-offs.",
+    "tags": ["selective-table"],
+    "must": ["Use a compact table when it makes the comparison materially easier to scan."],
+    "must_not": ["Use a table for decorative metadata unrelated to the trade-off."]
+  },
+  {
+    "id": "V14-O09",
+    "prompt": "A 5 Whys chain revealed the key causal insight. Explain it.",
+    "tags": ["method-visible-when-useful"],
+    "must": ["Show the causal chain if its structure is the insight."],
+    "must_not": ["Hide a useful causal structure merely because methods are normally internal."]
+  },
+  {
+    "id": "V14-O10",
+    "prompt": "The research tool failed and a material unknown remains. Give the final answer.",
+    "tags": ["material-uncertainty"],
+    "must": ["Keep the missing evidence and its impact visible and provide the next justified move."],
+    "must_not": ["Write a polished definitive conclusion that silently erases the failure."]
+  }
+]
