@@ -12,3 +12,4 @@ venv/
 storage_state.json
 master_token.json
 notebooklm-skill.zip
+evals/runs/hermes-e2e/current/
