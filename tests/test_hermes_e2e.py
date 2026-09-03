@@ -198,6 +198,47 @@ class HermesE2EHarnessTests(unittest.TestCase):
         source = inspect.getsource(h.run_notebooklm_case)
         self.assertNotIn('["hermes", "-p", profile, "mcp", "add"', source)
 
+    def test_notebooklm_grounding_requires_successful_source_read(self):
+        metadata_only = [
+            {
+                "tool": "mcp_notebooklm_notebook_list",
+                "call_id": "n1",
+                "has_result": True,
+                "result_error": False,
+            }
+        ]
+        self.assertFalse(h.notebooklm_grounding_succeeded(metadata_only))
+
+        incomplete_read = [
+            {
+                "tool": "source_read",
+                "call_id": "s1",
+                "has_result": False,
+                "result_error": False,
+            }
+        ]
+        self.assertFalse(h.notebooklm_grounding_succeeded(incomplete_read))
+
+        failed_read = [
+            {
+                "tool": "source_read",
+                "call_id": "s2",
+                "has_result": True,
+                "result_error": True,
+            }
+        ]
+        self.assertFalse(h.notebooklm_grounding_succeeded(failed_read))
+
+        successful_read = [
+            {
+                "tool": "mcp_notebooklm_source_read",
+                "call_id": "s3",
+                "has_result": True,
+                "result_error": False,
+            }
+        ]
+        self.assertTrue(h.notebooklm_grounding_succeeded(successful_read))
+
     def test_summary_is_blocked_until_all_six_pass(self):
         partial = [{"id": f"H14-E0{i}", "pass": True} for i in range(1, 6)]
         self.assertEqual(h.reduce_gate(partial), "BLOCKED")
