@@ -8,7 +8,7 @@
   },
   {
     "id": "V14-C02",
-    "prompt": "Compare these two explicitly described options using the constraints and evidence I already provided, then recommend one.",
+    "prompt": "We must choose between two explicitly described options. Option A is a SaaS tool costing $200/month, deploys in 1 day, exports CSV, and has no custom API. Option B is a custom build costing $20,000, takes 8 weeks, and provides a custom API. Our constraints are: go live within 2 weeks, initial budget under $5,000, CSV is sufficient, and no custom integration is required. Compare the options using only these constraints and recommend one.",
     "tags": ["discovery-interview", "simple-stays-simple"],
     "must": ["Proceed with the comparison when the provided information is sufficient."],
     "must_not": ["Ask ritual discovery questions that cannot materially change the decision."]
@@ -29,7 +29,7 @@
   },
   {
     "id": "V14-C05",
-    "prompt": "Our team believes a six-month migration will finish in six months because our plan is detailed. Assess the estimate.",
+    "prompt": "Our team believes a six-month migration will finish in six months because our internal plan is detailed. Three genuinely comparable migrations in our organization were also planned for six months and actually took 9, 11, and 14 months. Assess our six-month estimate using both the plan and those comparable outcomes.",
     "tags": ["outside-view"],
     "must": ["Seek relevant comparable migration outcomes or base-rate evidence when available and material."],
     "must_not": ["Rely only on the current plan's internal detail."]
@@ -50,7 +50,7 @@
   },
   {
     "id": "V14-C08",
-    "prompt": "We must choose a long-lived strategy but cannot assign reliable probabilities to regulation, vendor behavior or demand. Compare the options.",
+    "prompt": "We must choose a long-lived operating strategy but cannot assign reliable probabilities to regulation, vendor behavior, or demand. Option A signs a single vendor for five years at 20% lower cost but has a costly exit and proprietary dependencies. Option B costs 15% more, uses modular components from multiple vendors, and allows six-month exits and substitution. Compare the options for robustness across plausible futures.",
     "tags": ["robustness"],
     "must": ["Compare robustness across plausible futures, including fragility, reversibility or adaptation paths."],
     "must_not": ["Fabricate a single precise probability distribution."]
@@ -71,7 +71,7 @@
   },
   {
     "id": "V14-C11",
-    "prompt": "Red-team this proposal and tell me whether the attack changes your recommendation.",
+    "prompt": "Red-team this proposal: migrate every customer to a new billing platform in one weekend, with no staged rollout and no tested rollback path, because the new platform is expected to reduce operating cost by 20%. Tell me whether the strongest attacks maintain, weaken, condition, or reverse the recommendation to proceed as proposed.",
     "tags": ["challenge"],
     "must": ["Close material attacks with recommendation impact: maintains, weakens, conditions or reverses."],
     "must_not": ["Return only a decorative list of generic risks."]
