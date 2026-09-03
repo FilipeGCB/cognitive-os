@@ -1,0 +1,52 @@
+{
+  "id": "notebooklm-py",
+  "capability": "Grounded Corpus Research",
+  "name": "notebooklm-py / NotebookLM MCP",
+  "source": "https://github.com/teng-lin/notebooklm-py",
+  "version": "v0.8.2",
+  "commit": "c1008a4416e338b7497a7db7db0500fad5f097e6",
+  "license": "MIT",
+  "status": "tested-candidate",
+  "consent": "specific",
+  "install": {
+    "silent": false,
+    "preferred_isolated": "uv tool install \"notebooklm-py[mcp,browser]\"",
+    "ephemeral_mcp": "uvx --from \"notebooklm-py[mcp]\" notebooklm-mcp",
+    "client_auto_config_examples": [
+      "notebooklm mcp install claude-desktop",
+      "notebooklm mcp install claude-code",
+      "notebooklm mcp install cursor",
+      "notebooklm mcp install windsurf"
+    ]
+  },
+  "auth": {
+    "required": true,
+    "default_backend": "web",
+    "primary_command": "notebooklm login",
+    "verification": "notebooklm auth check --test --json",
+    "credential_location": "~/.notebooklm/profiles/<profile>/",
+    "credential_warning": "Stored cookies or master-token material are account credentials and must never be committed or logged."
+  },
+  "footprint": {
+    "base": "small Python package",
+    "browser_extra": "interactive login may download Chromium; upstream documents roughly 170 MB",
+    "persistent_service": false
+  },
+  "permissions": {
+    "read": true,
+    "write": true,
+    "notes": "The MCP surface manages notebooks/sources/artifacts and therefore includes mutations. Cognitive OS must not treat it as read-only."
+  },
+  "reversible": true,
+  "known_risks": [
+    "Consumer NotebookLM backends rely on undocumented Google APIs and may change without notice.",
+    "Authentication material can be account-equivalent and requires local secret handling.",
+    "The MCP server is documented upstream as experimental/preview and its tool surface is not covered by normal semver guarantees.",
+    "Remote deployment materially increases security complexity and is not part of the default Cognitive OS setup."
+  ],
+  "gauntlet": {
+    "status": "test",
+    "reason": "Identity, release, license, install/auth and MCP surface are verified from upstream. Final supported status still requires Cognitive OS host-matrix installation/preflight tests.",
+    "evidence": "docs/capabilities/notebooklm-adapter-evaluation.md"
+  }
+}
