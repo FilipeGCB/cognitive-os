@@ -1,0 +1,46 @@
+name: release
+
+on:
+  workflow_run:
+    workflows: ["ci"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  stable-release:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exactly the verified main commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Create immutable stable tag and GitHub Release when VERSION is stable
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          VERSION="$(tr -d '[:space:]' < skills/cognitive-os/VERSION)"
+          if [[ "$VERSION" == *-dev* || "$VERSION" == *-rc* || -z "$VERSION" ]]; then
+            echo "VERSION=$VERSION is not stable; no release will be created."
+            exit 0
+          fi
+
+          TAG="v${VERSION}"
+          if git rev-parse "$TAG" >/dev/null 2>&1 || gh release view "$TAG" >/dev/null 2>&1; then
+            echo "$TAG already exists; refusing to move or recreate a stable release."
+            exit 0
+          fi
+
+          test "$(git rev-parse HEAD)" = "$VERIFIED_SHA"
+          gh release create "$TAG" \
+            --target "$VERIFIED_SHA" \
+            --title "Cognitive OS ${TAG}" \
+            --generate-notes
