@@ -72,6 +72,22 @@ jobs:
           npx -y skills@latest add ./skills --skill cognitive-os --agent gemini-cli -y --copy
           test -f .agents/skills/cognitive-os/SKILL.md
 
+  notebooklm-adapter-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pinned NotebookLM MCP candidate
+        run: python -m pip install "notebooklm-py[mcp]==0.8.2"
+
+      - name: Verify NotebookLM CLI and MCP entrypoints
+        run: |
+          notebooklm --version
+          notebooklm-mcp --help >/dev/null
+
   secret-scan:
     runs-on: ubuntu-latest
     steps:
