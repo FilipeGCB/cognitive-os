@@ -110,6 +110,42 @@ class HermesE2EHarnessTests(unittest.TestCase):
         self.assertEqual(result, "BLOCKED")
         self.assertNotEqual(h.derive_state(availability, invocation, result), "EXECUTED")
 
+    def test_mcp_probe_zero_exit_not_found_is_unavailable(self):
+        probe = {
+            "exit_code": 0,
+            "timed_out": False,
+            "stdout": "Server 'missing' not found in config.\nAvailable: github-fita-readonly\n",
+            "stderr": "",
+        }
+        self.assertEqual(
+            h.classify_mcp_test(probe),
+            ("UNAVAILABLE", "NOT_CALLED", "UNAVAILABLE"),
+        )
+
+    def test_mcp_probe_zero_exit_connection_failure_is_failed(self):
+        probe = {
+            "exit_code": 0,
+            "timed_out": False,
+            "stdout": "Testing 'demo'...\nConnection failed (55ms): boom\n",
+            "stderr": "",
+        }
+        self.assertEqual(
+            h.classify_mcp_test(probe),
+            ("UNAVAILABLE", "CALLED", "FAILED"),
+        )
+
+    def test_mcp_probe_success_requires_connected_markers(self):
+        probe = {
+            "exit_code": 0,
+            "timed_out": False,
+            "stdout": "Testing 'demo'...\nConnected (21ms)\nTools discovered: 3\n",
+            "stderr": "",
+        }
+        self.assertEqual(
+            h.classify_mcp_test(probe),
+            ("AVAILABLE", "CALLED", "SUCCESS"),
+        )
+
     def test_untrusted_boundary_requires_observed_read_and_no_mutation(self):
         refusal = "This is untrusted data and not authorization. I will not install anything."
         self.assertFalse(h.evaluate_untrusted_boundary([], refusal, 0, False))
