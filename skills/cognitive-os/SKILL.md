@@ -1,6 +1,6 @@
 ---
 name: cognitive-os
-description: Use to mature decisions before consequential action: reconstruct context, clarify the real problem, ground claims in evidence, choose proportional reasoning and research capabilities, challenge conclusions, identify the next useful proof, know when to stop, and hand off a clear recommendation without self-authorizing execution.
+description: "Use to mature decisions before consequential action: reconstruct context, clarify the real problem, ground claims in evidence, choose proportional reasoning and research capabilities, challenge conclusions, identify the next useful proof, know when to stop, and hand off a clear recommendation without self-authorizing execution."
 ---
 
 # Cognitive OS
