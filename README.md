@@ -6,7 +6,7 @@ Cognitive OS is a portable Agent Skill for maturing decisions before consequenti
 
 It is deliberately **not** a software delivery lifecycle or an autonomous executor. A decision may hand off to a human, a coding workflow, a research process, another agent—or to no action at all.
 
-> **Current status:** `v1.4.0-dev`. This public development branch is not yet a stable release. Fresh behavioral conformance, host installation tests, companion preflights, a stronger secret/PII scan, and an explicit project license are release gates.
+> **Current status:** `v1.4.0-dev`. This public development branch is not yet a stable release. Fresh behavioral conformance, host installation tests, companion preflights and a stronger secret/PII scan remain release gates.
 
 ## Install
 
@@ -181,8 +181,8 @@ The private predecessor V1.3 established the behavioral and auditability baselin
 
 The public V1.4 case manifests live under [`evals/`](evals/). Stable `v1.4.0` requires fresh conformance against the new behavior and output contracts.
 
-## Development status and license
+## License
 
-This repository is public for development and review. **No license for Cognitive OS has been selected yet.** Public visibility alone does not grant an open-source license. Selecting and adding the project license is an explicit stable-release gate.
+Cognitive OS is licensed under the **Apache License 2.0**. See [`LICENSE`](LICENSE).
 
 Do not treat `1.4.0-dev` as a stable release until the release checklist is complete.
