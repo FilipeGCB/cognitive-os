@@ -6,7 +6,7 @@
   "version": "v0.8.2",
   "commit": "c1008a4416e338b7497a7db7db0500fad5f097e6",
   "license": "MIT",
-  "status": "tested-candidate",
+  "status": "candidate",
   "consent": "specific",
   "install": {
     "silent": false,
