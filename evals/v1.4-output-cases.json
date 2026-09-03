@@ -15,7 +15,7 @@
   },
   {
     "id": "V14-O03",
-    "prompt": "Answer normally; I did not ask for audit mode.",
+    "prompt": "I need to decide whether to run a two-week pilot before a full rollout. Evidence: eight customer interviews support the problem, the pilot is low-cost and reversible, but we still have no retention data. Answer normally; I did not ask for audit mode.",
     "tags": ["no-framework-dump"],
     "must": ["Report discoveries and decision-relevant evidence in natural language."],
     "must_not": ["Dump phase numbers, lens names, Gauntlet status or raw capability enums merely to demonstrate rigor."]
