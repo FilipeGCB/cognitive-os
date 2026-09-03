@@ -22,6 +22,7 @@ SCAN_ROOTS = [
     ROOT / "examples",
     ROOT / "distribution",
     ROOT / "docs" / "capabilities",
+    ROOT / "docs" / "releases",
 ]
 SCAN_FILES = [ROOT / "README.md", ROOT / "CHANGELOG.md", ROOT / "CONTRIBUTING.md"]
 
@@ -32,7 +33,6 @@ PATTERNS = {
     "home directory path": re.compile(r"/(?:home|Users)/[^/\s]+/"),
 }
 
-# Public project identity and generic examples may be deliberately present.
 ALLOWED_EMAILS: set[str] = set()
 
 
