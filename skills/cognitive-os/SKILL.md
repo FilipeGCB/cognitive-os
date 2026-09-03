@@ -131,6 +131,10 @@ Activate only when explicitly requested or required by a formal gate.
 
 Account for relevant phases and conditional branches without persisting chain-of-thought. Non-applicable branches are `NOT_APPLICABLE`; applicable incomplete branches are `PARTIAL` or `BLOCKED`. Tool failures, truncation, rate limits and unavailability remain visible when material.
 
+When Full Flow/Audit is explicitly requested and the supplied observable state is sufficient to assess the decision, do not ask for ritual clarification. Produce the human recommendation and materialize the observable audit evidence in the same response using `schemas/cognitive-run-record.md`.
+
+At minimum, account for the relevant entries in the **Phase Ledger**, **Conditional Branch Ledger**, **Capability Ledger**, **Evidence Ledger**, and **Gap / Failure Ledger**, plus the final run and decision states. Record only observable facts, classifications, statuses, source/capability evidence and material gaps. Use `NOT_APPLICABLE`, `PARTIAL`, or `BLOCKED` rather than silently omitting relevant branches. Never reconstruct or persist private chain-of-thought to fill an audit field.
+
 Use `schemas/cognitive-run-record.md` for observable audit evidence.
 
 ## Output
