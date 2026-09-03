@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cognitive OS Adapter Manifest",
+  "type": "object",
+  "required": ["id", "capability", "name", "source", "version", "license", "status", "install", "auth", "footprint", "permissions", "reversible", "gauntlet"],
+  "properties": {
+    "id": {"type": "string"},
+    "capability": {"type": "string"},
+    "name": {"type": "string"},
+    "source": {"type": "string"},
+    "version": {"type": ["string", "null"]},
+    "license": {"type": ["string", "null"]},
+    "status": {"enum": ["candidate", "tested", "supported", "rejected"]},
+    "install": {"type": "object"},
+    "auth": {"type": "object"},
+    "footprint": {"type": "object"},
+    "permissions": {"type": "object"},
+    "reversible": {"type": "boolean"},
+    "gauntlet": {"type": "object"}
+  },
+  "additionalProperties": true
+}
