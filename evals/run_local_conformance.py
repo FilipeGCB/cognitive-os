@@ -23,6 +23,7 @@ CRITICAL_IDS = {
     "V14-C06", "V14-C10", "V14-C12", "V14-C16", "V14-C18", "V14-C19",
     "V14-O03", "V14-O07", "V14-O10",
 }
+AUDIT_TAGS = {"audit", "audit-preserved", "no-chain-of-thought"}
 
 
 def read(path: Path) -> str:
@@ -50,7 +51,7 @@ def context_for(tags: list[str]) -> str:
             SKILL / "policies" / "capability-security.md",
             SKILL / "references" / "capabilities.md",
         ]
-    if tagset & {"audit", "audit-preserved", "no-chain-of-thought"}:
+    if tagset & AUDIT_TAGS:
         paths += [SKILL / "schemas" / "cognitive-run-record.md", SKILL / "references" / "output.md"]
     if any(tag.startswith("conclusion") or tag in {
         "idea-evolution", "no-framework-dump", "readable-markdown", "no-pseudo-confidence",
@@ -67,13 +68,36 @@ def context_for(tags: list[str]) -> str:
     return "\n\n---\n\n".join(f"# FILE: {p.relative_to(SKILL)}\n{read(p)}" for p in unique)
 
 
-def ollama_chat(url: str, model: str, messages: list[dict], json_mode: bool = False, timeout: int = 240) -> str:
+def response_num_predict_for(tags: list[str]) -> int:
+    """Give audit responses enough room to materialize observable ledgers."""
+    return 2200 if set(tags) & AUDIT_TAGS else 600
+
+
+def grader_system_prompt(tags: list[str]) -> str:
+    prompt = "You are a strict conformance grader. Return valid JSON only."
+    if set(tags) & AUDIT_TAGS:
+        prompt += (
+            " Observable audit records and ledgers that report phase, branch, capability, evidence, or gap states "
+            "are allowed audit evidence. When the rubric requires them, observable audit ledgers must not be treated "
+            "as private chain-of-thought. Only hidden step-by-step deliberation is prohibited."
+        )
+    return prompt
+
+
+def ollama_chat(
+    url: str,
+    model: str,
+    messages: list[dict],
+    json_mode: bool = False,
+    timeout: int = 240,
+    num_predict: int = 600,
+) -> str:
     payload = {
         "model": model,
         "messages": messages,
         "stream": False,
         "think": False,
-        "options": {"temperature": 0, "num_predict": 600, "num_ctx": 8192},
+        "options": {"temperature": 0, "num_predict": num_predict, "num_ctx": 8192},
     }
     if json_mode:
         payload["format"] = "json"
@@ -103,7 +127,7 @@ def run_case(url: str, model: str, case: dict) -> dict:
     response = ollama_chat(url, model, [
         {"role": "system", "content": system},
         {"role": "user", "content": case["prompt"]},
-    ])
+    ], num_predict=response_num_predict_for(case["tags"]))
 
     rubric = {"id": case["id"], "must": case["must"], "must_not": case["must_not"]}
     grader_prompt = f"""Grade one assistant response strictly against the rubric.
@@ -117,7 +141,7 @@ ASSISTANT RESPONSE:
 {response}
 """
     raw_grade = ollama_chat(url, model, [
-        {"role": "system", "content": "You are a strict conformance grader. Return valid JSON only."},
+        {"role": "system", "content": grader_system_prompt(case["tags"])},
         {"role": "user", "content": grader_prompt},
     ], json_mode=True)
     try:
