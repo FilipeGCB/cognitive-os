@@ -343,6 +343,16 @@ def notebooklm_readiness_commands(profile: str, approved: bool) -> list[list[str
     return commands
 
 
+def notebooklm_grounding_succeeded(events: list[dict[str, Any]]) -> bool:
+    """Require an observed successful source-content read for grounded corpus PASS."""
+    return any(
+        _matches_expected(str(event.get("tool") or ""), {"source_read"})
+        and bool(event.get("has_result"))
+        and not bool(event.get("result_error"))
+        for event in events
+    )
+
+
 def reduce_gate(records: list[dict[str, Any]]) -> str:
     by_id = {str(record.get("id")): record for record in records if record.get("id")}
     if not all(case_id in by_id for case_id in CASE_IDS):
@@ -889,8 +899,8 @@ def run_notebooklm_case(
         "cognitive-os-e2e-H14-E04",
     )
     mcp_events = [event for event in events if str(event.get("tool") or "").lower() not in SKILL_TOOLS]
-    successful_mcp_event = any(event.get("has_result") and not event.get("result_error") for event in mcp_events)
-    passed = mcp_ok and execution["exit_code"] == 0 and not execution["timed_out"] and successful_mcp_event
+    grounded_read_observed = notebooklm_grounding_succeeded(mcp_events)
+    passed = mcp_ok and execution["exit_code"] == 0 and not execution["timed_out"] and grounded_read_observed
     availability = "AVAILABLE" if mcp_ok else "UNAVAILABLE"
     invocation = "CALLED" if mcp_events else "NOT_CALLED"
     result = None
@@ -908,11 +918,12 @@ def run_notebooklm_case(
         evidence_refs=[
             "sanitized notebooklm auth status",
             "hermes mcp test notebooklm",
-            "Hermes session MCP tool call/result",
+            "Hermes session source_read call/result",
         ],
         observed_tools=[str(event.get("tool") or "") for event in events],
         notes=(
             f"auth_status={auth_info['status']}; auth_checks={json.dumps(auth_info['checks'], sort_keys=True)}; "
+            f"grounded_source_read_observed={grounded_read_observed}; "
             f"response={_last_assistant_text(session)[:1400]}"
         ),
         command_evidence=[_min_command_result(item) for item in (version, listing, tested, execution) if item],
