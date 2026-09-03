@@ -1,3 +1,4 @@
+import inspect
 import json
 import sys
 import unittest
@@ -182,6 +183,20 @@ class HermesE2EHarnessTests(unittest.TestCase):
         flat = " ".join(" ".join(c) for c in commands)
         self.assertNotIn("auth", flat.lower())
         self.assertNotIn("mcp add", flat.lower())
+
+    def test_notebooklm_readiness_never_autoconfigures_mcp(self):
+        commands = h.notebooklm_readiness_commands(
+            profile="cognitive-os-e2e",
+            approved=True,
+        )
+        flat = " ".join(" ".join(c) for c in commands)
+        self.assertIn("auth check --test --json", flat)
+        self.assertIn("mcp test notebooklm", flat)
+        self.assertNotIn("mcp add", flat.lower())
+
+    def test_notebooklm_case_never_invokes_mcp_add(self):
+        source = inspect.getsource(h.run_notebooklm_case)
+        self.assertNotIn('["hermes", "-p", profile, "mcp", "add"', source)
 
     def test_summary_is_blocked_until_all_six_pass(self):
         partial = [{"id": f"H14-E0{i}", "pass": True} for i in range(1, 6)]
