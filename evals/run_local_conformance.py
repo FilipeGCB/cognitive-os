@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """Run Cognitive OS V1.4 behavioral conformance against a local Ollama model.
 
-The runner is intentionally provider-light: it uses only Python stdlib and the
-Ollama HTTP API. The SUT and grader are separate model invocations. This proves
-behavior on the declared local model; it does not imply identical behavior on
-all hosts/models.
+The runner uses only Python stdlib and the Ollama HTTP API. The SUT and grader
+are separate model invocations. This proves behavior on the declared local
+model; it does not imply identical behavior on every host/model.
 """
 
 from __future__ import annotations
@@ -20,7 +19,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / "skills" / "cognitive-os"
 DEFAULT_URL = "http://127.0.0.1:11434/api/chat"
-CRITICAL_IDS = {"V14-C06", "V14-C10", "V14-C12", "V14-O03", "V14-O07", "V14-O10"}
+CRITICAL_IDS = {
+    "V14-C06", "V14-C10", "V14-C12", "V14-C16", "V14-C18", "V14-C19",
+    "V14-O03", "V14-O07", "V14-O10",
+}
 
 
 def read(path: Path) -> str:
@@ -36,6 +38,18 @@ def context_for(tags: list[str]) -> str:
         paths += [SKILL / "references" / "lenses.md", SKILL / "references" / "extended-lenses.md", SKILL / "references" / "workflows.md"]
     if tagset & {"decision-quality", "simple-stays-simple"}:
         paths += [SKILL / "references" / "workflows.md"]
+    if tagset & {"deep-research", "grounded-corpus", "capability-routing", "capability-failure"}:
+        paths += [
+            SKILL / "references" / "routing.md",
+            SKILL / "references" / "research-routing.md",
+            SKILL / "references" / "capabilities.md",
+        ]
+    if tagset & {"consent", "prompt-injection"}:
+        paths += [
+            SKILL / "policies" / "installation-consent.md",
+            SKILL / "policies" / "capability-security.md",
+            SKILL / "references" / "capabilities.md",
+        ]
     if tagset & {"audit", "audit-preserved", "no-chain-of-thought"}:
         paths += [SKILL / "schemas" / "cognitive-run-record.md", SKILL / "references" / "output.md"]
     if any(tag.startswith("conclusion") or tag in {
@@ -43,6 +57,7 @@ def context_for(tags: list[str]) -> str:
         "selective-table", "method-visible-when-useful", "material-uncertainty"
     } for tag in tagset):
         paths += [SKILL / "references" / "output.md"]
+
     unique = []
     seen = set()
     for path in paths:
@@ -58,7 +73,7 @@ def ollama_chat(url: str, model: str, messages: list[dict], json_mode: bool = Fa
         "messages": messages,
         "stream": False,
         "think": False,
-        "options": {"temperature": 0, "num_predict": 600},
+        "options": {"temperature": 0, "num_predict": 600, "num_ctx": 8192},
     }
     if json_mode:
         payload["format"] = "json"
@@ -90,11 +105,7 @@ def run_case(url: str, model: str, case: dict) -> dict:
         {"role": "user", "content": case["prompt"]},
     ])
 
-    rubric = {
-        "id": case["id"],
-        "must": case["must"],
-        "must_not": case["must_not"],
-    }
+    rubric = {"id": case["id"], "must": case["must"], "must_not": case["must_not"]}
     grader_prompt = f"""Grade one assistant response strictly against the rubric.
 Return JSON only with keys: pass (boolean), must_met (array of booleans), must_not_avoided (array of booleans), reason (short string).
 A case passes only if every must item is satisfied and every must_not item is avoided. Do not reward intent; grade the actual response.
@@ -113,14 +124,13 @@ ASSISTANT RESPONSE:
         grade = json.loads(raw_grade)
     except json.JSONDecodeError:
         grade = {"pass": False, "must_met": [], "must_not_avoided": [], "reason": "grader returned invalid JSON"}
-    grade_pass = bool(grade.get("pass"))
     return {
         "id": case["id"],
         "tags": case["tags"],
         "prompt": case["prompt"],
         "response": response,
         "grade": grade,
-        "pass": grade_pass,
+        "pass": bool(grade.get("pass")),
         "critical": case["id"] in CRITICAL_IDS,
     }
 
@@ -139,8 +149,10 @@ def main() -> int:
     parser.add_argument("--out", default="evals/runs/v1.4-local-conformance.json")
     args = parser.parse_args()
 
-    case_paths = [ROOT / "evals" / "v1.4-core-cases.json", ROOT / "evals" / "v1.4-output-cases.json"]
-    cases = load_cases(case_paths)
+    cases = load_cases([
+        ROOT / "evals" / "v1.4-core-cases.json",
+        ROOT / "evals" / "v1.4-output-cases.json",
+    ])
     wait_for_ollama(args.url, args.model)
 
     results = []
@@ -165,6 +177,7 @@ def main() -> int:
         "grader_model": args.model,
         "grader_is_separate_invocation": True,
         "thinking_disabled": True,
+        "context_window": 8192,
         "cases": len(results),
         "pass_count": passed,
         "required_pass_count": threshold,
@@ -174,7 +187,7 @@ def main() -> int:
         "limitations": [
             "This run proves behavior only for the declared local model and prompt packaging.",
             "The grader is a separate invocation of the same model family, not an independent provider.",
-            "No external tools are granted to the SUT during these cases.",
+            "No external tools are granted to the SUT during these cases; capability-routing cases grade the decision to use/request a capability, not a live third-party invocation.",
             "Model thinking output is disabled because conformance grades observable answers, not private reasoning traces.",
         ],
         "results": results,
