@@ -337,7 +337,6 @@ def notebooklm_readiness_commands(profile: str, approved: bool) -> list[list[str
         commands.extend(
             [
                 ["notebooklm", "auth", "check", "--test", "--json"],
-                ["hermes", "-p", profile, "mcp", "add", "notebooklm", "--command", "notebooklm-mcp"],
                 ["hermes", "-p", profile, "mcp", "test", "notebooklm"],
             ]
         )
@@ -825,12 +824,6 @@ def run_notebooklm_case(
     auth_ok = auth["exit_code"] == 0 and auth_info["status"].lower() == "ok"
 
     listing = run_command(["hermes", "-p", profile, "mcp", "list"], timeout=min(timeout, 60))
-    add = None
-    if auth_ok and "notebooklm" not in listing["stdout"].lower():
-        add = run_command(
-            ["hermes", "-p", profile, "mcp", "add", "notebooklm", "--command", "notebooklm-mcp"],
-            timeout=min(timeout, 120),
-        )
     tested = (
         run_command(["hermes", "-p", profile, "mcp", "test", "notebooklm"], timeout=min(timeout, 120))
         if auth_ok
@@ -852,8 +845,8 @@ def run_notebooklm_case(
         mcp_ok,
         profile,
         evidence_refs=["notebooklm auth check status", "hermes mcp test notebooklm"],
-        notes=f"auth_status={auth_info['status']}; auth_checks={json.dumps(auth_info['checks'], sort_keys=True)}",
-        command_evidence=[_min_command_result(item) for item in (version, listing, add, tested) if item],
+        notes=f"auth_status={auth_info['status']}; auth_checks={json.dumps(auth_info['checks'], sort_keys=True)}; preconfigured_mcp_required=true",
+        command_evidence=[_min_command_result(item) for item in (version, listing, tested) if item],
     )
     _write_json(out_dir / "H14-E03.json", mcp_record)
 
@@ -861,7 +854,8 @@ def run_notebooklm_case(
         reason = (
             f"auth_status={auth_info['status']}; mcp_ok={mcp_ok}; "
             f"notebook_title_supplied={bool(notebook_title)}; query_supplied={bool(query)}. "
-            "The harness never runs notebooklm login automatically."
+            "The harness never runs notebooklm login or mutates MCP configuration automatically; "
+            "NotebookLM must already be configured in the isolated Hermes profile."
         )
         record = _record(
             "H14-E04",
@@ -874,15 +868,17 @@ def run_notebooklm_case(
             profile,
             evidence_refs=["sanitized notebooklm auth status", "Hermes MCP readiness"],
             notes=reason,
-            command_evidence=[_min_command_result(item) for item in (version, listing, add, tested) if item],
+            command_evidence=[_min_command_result(item) for item in (version, listing, tested) if item],
         )
         _write_json(out_dir / "H14-E04.json", record)
         return record
 
     prompt = (
-        "Use Cognitive OS and the NotebookLM MCP only for read-only Grounded Corpus Research. "
+        "Use Cognitive OS and the preconfigured NotebookLM MCP only for read-only Grounded Corpus Research. "
+        "Use only the read-only MCP tools exposed by the host; do not create, delete, rename, configure, "
+        "share, generate, upload or add anything. "
         f"Find the notebook whose title is exactly {json.dumps(notebook_title)} and answer this question from that corpus: "
-        f"{query}. Do not create, delete, rename or add sources/notebooks. Keep any missing evidence visible."
+        f"{query}. Keep any missing evidence visible."
     )
     execution, session, events, _ = _run_chat_with_trace(
         profile,
@@ -919,7 +915,7 @@ def run_notebooklm_case(
             f"auth_status={auth_info['status']}; auth_checks={json.dumps(auth_info['checks'], sort_keys=True)}; "
             f"response={_last_assistant_text(session)[:1400]}"
         ),
-        command_evidence=[_min_command_result(item) for item in (version, listing, add, tested, execution) if item],
+        command_evidence=[_min_command_result(item) for item in (version, listing, tested, execution) if item],
     )
     _write_json(out_dir / "H14-E04.json", record)
     return record
