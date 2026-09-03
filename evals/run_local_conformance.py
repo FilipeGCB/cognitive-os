@@ -12,7 +12,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import sys
 import time
 import urllib.error
 import urllib.request
@@ -44,7 +43,6 @@ def context_for(tags: list[str]) -> str:
         "selective-table", "method-visible-when-useful", "material-uncertainty"
     } for tag in tagset):
         paths += [SKILL / "references" / "output.md"]
-    # Stable de-duplication.
     unique = []
     seen = set()
     for path in paths:
@@ -59,6 +57,7 @@ def ollama_chat(url: str, model: str, messages: list[dict], json_mode: bool = Fa
         "model": model,
         "messages": messages,
         "stream": False,
+        "think": False,
         "options": {"temperature": 0, "num_predict": 600},
     }
     if json_mode:
@@ -165,6 +164,7 @@ def main() -> int:
         "sut_model": args.model,
         "grader_model": args.model,
         "grader_is_separate_invocation": True,
+        "thinking_disabled": True,
         "cases": len(results),
         "pass_count": passed,
         "required_pass_count": threshold,
@@ -175,6 +175,7 @@ def main() -> int:
             "This run proves behavior only for the declared local model and prompt packaging.",
             "The grader is a separate invocation of the same model family, not an independent provider.",
             "No external tools are granted to the SUT during these cases.",
+            "Model thinking output is disabled because conformance grades observable answers, not private reasoning traces.",
         ],
         "results": results,
     }
