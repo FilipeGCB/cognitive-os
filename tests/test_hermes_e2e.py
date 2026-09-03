@@ -1,0 +1,125 @@
+import json
+import sys
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from evals.e2e import run_hermes_e2e as h
+
+
+class HermesE2EHarnessTests(unittest.TestCase):
+    def test_manifest_has_six_stable_cases(self):
+        cases = json.loads((ROOT / "evals" / "e2e" / "hermes-cases.json").read_text())
+        self.assertEqual([c["id"] for c in cases], [f"H14-E0{i}" for i in range(1, 7)])
+        self.assertEqual(len({c["id"] for c in cases}), 6)
+        nb = next(c for c in cases if c["id"] == "H14-E04")
+        self.assertTrue(nb["requires_account_approval"])
+
+    def test_runtime_state_derivation_is_strict(self):
+        self.assertEqual(h.derive_state("AVAILABLE", "CALLED", "SUCCESS"), "EXECUTED")
+        self.assertEqual(h.derive_state("AVAILABLE", "NOT_CALLED", None), "AVAILABLE_NOT_EXERCISED")
+        self.assertEqual(h.derive_state("UNAVAILABLE", "NOT_CALLED", "UNAVAILABLE"), "UNAVAILABLE")
+        self.assertEqual(h.derive_state("AVAILABLE", "CALLED", "FAILED"), "CALLED_FAILED")
+        with self.assertRaises(ValueError):
+            h.derive_state("UNKNOWN", "CALLED", "SUCCESS")
+
+    def test_sanitize_text_redacts_secrets(self):
+        raw = (
+            "Authorization: Bearer abc.def.ghi\n"
+            "token=supersecretvalue\n"
+            "cookie: SID=secret-cookie; __Secure-1PSID=also-secret\n"
+            "safe=line"
+        )
+        clean = h.sanitize_text(raw)
+        self.assertNotIn("abc.def.ghi", clean)
+        self.assertNotIn("supersecretvalue", clean)
+        self.assertNotIn("secret-cookie", clean)
+        self.assertNotIn("also-secret", clean)
+        self.assertIn("safe=line", clean)
+        self.assertIn("[REDACTED]", clean)
+
+    def test_extract_tool_events_accepts_common_hermes_shapes(self):
+        session = {
+            "messages": [
+                {
+                    "role": "assistant",
+                    "tool_calls": [
+                        {"id": "call-1", "function": {"name": "web_search", "arguments": "{}"}}
+                    ],
+                },
+                {"role": "tool", "tool_call_id": "call-1", "name": "web_search", "content": "ok"},
+                {"role": "assistant", "tool_calls": [{"id": "call-2", "name": "terminal"}]},
+                {"role": "tool", "tool_call_id": "call-2", "tool_name": "terminal", "content": "done"},
+            ]
+        }
+        events = h.extract_tool_events(session)
+        by_id = {e["call_id"]: e for e in events}
+        self.assertEqual(by_id["call-1"]["tool"], "web_search")
+        self.assertTrue(by_id["call-1"]["has_result"])
+        self.assertEqual(by_id["call-2"]["tool"], "terminal")
+        self.assertTrue(by_id["call-2"]["has_result"])
+
+    def test_chat_command_is_profile_scoped_and_never_yolo(self):
+        cmd = h.build_chat_command(
+            profile="cognitive-os-e2e",
+            prompt="research this",
+            toolsets=["web", "skills"],
+        )
+        self.assertEqual(cmd[:3], ["hermes", "-p", "cognitive-os-e2e"])
+        self.assertIn("cognitive-os", cmd)
+        self.assertIn("web,skills", cmd)
+        self.assertNotIn("--yolo", cmd)
+
+    def test_trace_success_requires_call_and_tool_result(self):
+        availability, invocation, result = h.classify_trace(
+            expected_tools={"web_search"},
+            tool_events=[{"tool": "web_search", "call_id": "1", "has_result": True, "result_error": False}],
+            exit_code=0,
+            timed_out=False,
+        )
+        self.assertEqual((availability, invocation, result), ("AVAILABLE", "CALLED", "SUCCESS"))
+
+        availability, invocation, result = h.classify_trace(
+            expected_tools={"web_search"},
+            tool_events=[],
+            exit_code=0,
+            timed_out=False,
+        )
+        self.assertEqual((availability, invocation), ("UNKNOWN", "NOT_CALLED"))
+        self.assertNotEqual(result, "SUCCESS")
+
+    def test_timeout_is_never_success(self):
+        availability, invocation, result = h.classify_trace(
+            expected_tools={"web_search"},
+            tool_events=[{"tool": "web_search", "call_id": "1", "has_result": False, "result_error": False}],
+            exit_code=None,
+            timed_out=True,
+        )
+        self.assertEqual(invocation, "CALLED")
+        self.assertEqual(result, "BLOCKED")
+        self.assertNotEqual(h.derive_state(availability, invocation, result), "EXECUTED")
+
+    def test_notebooklm_account_use_requires_explicit_flag(self):
+        self.assertFalse(h.notebooklm_account_use_allowed(False))
+        self.assertTrue(h.notebooklm_account_use_allowed(True))
+        commands = h.notebooklm_readiness_commands(
+            profile="cognitive-os-e2e",
+            approved=False,
+        )
+        flat = " ".join(" ".join(c) for c in commands)
+        self.assertNotIn("auth", flat.lower())
+        self.assertNotIn("mcp add", flat.lower())
+
+    def test_summary_is_blocked_until_all_six_pass(self):
+        partial = [{"id": f"H14-E0{i}", "pass": True} for i in range(1, 6)]
+        self.assertEqual(h.reduce_gate(partial), "BLOCKED")
+        full = partial + [{"id": "H14-E06", "pass": True}]
+        self.assertEqual(h.reduce_gate(full), "PASS")
+        full[2]["pass"] = False
+        self.assertEqual(h.reduce_gate(full), "FAIL")
+
+
+if __name__ == "__main__":
+    unittest.main()
