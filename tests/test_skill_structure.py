@@ -27,6 +27,19 @@ class SkillStructureTests(unittest.TestCase):
         for token in forbidden:
             self.assertNotIn(token, text)
 
+    def test_full_flow_audit_requires_observable_ledgers_when_state_is_sufficient(self):
+        text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+        required = [
+            "do not ask for ritual clarification",
+            "Phase Ledger",
+            "Conditional Branch Ledger",
+            "Capability Ledger",
+            "Evidence Ledger",
+            "Gap / Failure Ledger",
+        ]
+        for token in required:
+            self.assertIn(token, text)
+
     def test_dev_version_is_explicit(self):
         self.assertEqual((SKILL / "VERSION").read_text(encoding="utf-8").strip(), "1.4.0-dev")
 
