@@ -31,7 +31,7 @@ No external app is required for the core Cognitive OS skill. Optional external c
 
 This repository does not yet claim that a public Plugin Directory listing has been submitted or approved. Directory submission/review is a release/distribution action and must be performed using the then-current OpenAI workflow after `v1.4.0` release gates pass.
 
-Running `npx skills add` on a user's computer must **not** be described as automatically installing the skill into ChatGPT web. ChatGPT's own skill/plugin surfaces control ChatGPT installation.
+Running `npx skills add` on a user's computer must not be described as automatically installing the skill into ChatGPT web. ChatGPT's own skill/plugin surfaces control ChatGPT installation.
 
 ## Current official references
 
