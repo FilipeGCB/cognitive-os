@@ -125,10 +125,12 @@ def validate_release_evidence(
     for index, artifact in enumerate(manifests):
         if not isinstance(artifact, Mapping):
             raise ReleaseEvidenceError(f"manifest {index} must be an object")
-        _require_keys(artifact, {"path", "sha256", "source_commit", "version"}, set(artifact), f"manifest {index}")
+        _require_keys(artifact, {"path", "sha256", "source_commit", "version"}, {"path", "sha256", "source_commit", "version"}, f"manifest {index}")
         if artifact["source_commit"] != candidate:
             raise ReleaseEvidenceError(f"manifest {index} is not bound to candidate_sha")
         path = str(artifact["path"])
+        if not path or Path(path).is_absolute() or ".." in Path(path).parts:
+            raise ReleaseEvidenceError(f"manifest {index} path is not repository-scoped")
         actual = sha256_bytes(_git_bytes(candidate, path, repo_root))
         if actual != _sha(artifact["sha256"], f"manifest {index}.sha256", 64):
             raise ReleaseEvidenceError(f"manifest hash mismatch: {path}")
@@ -138,7 +140,9 @@ def validate_release_evidence(
     harness = record["harness"]
     if not isinstance(harness, Mapping):
         raise ReleaseEvidenceError("harness must be an object")
-    _require_keys(harness, {"path", "sha256", "schema_version"}, set(harness), "harness")
+    _require_keys(harness, {"path", "sha256", "schema_version"}, {"path", "sha256", "schema_version"}, "harness")
+    if Path(str(harness["path"])).is_absolute() or ".." in Path(str(harness["path"])).parts:
+        raise ReleaseEvidenceError("harness path is not repository-scoped")
     harness_hash = sha256_bytes(_git_bytes(candidate, str(harness["path"]), repo_root))
     if harness_hash != _sha(harness["sha256"], "harness.sha256", 64):
         raise ReleaseEvidenceError("harness hash mismatch")
@@ -146,7 +150,7 @@ def validate_release_evidence(
     execution = record["execution"]
     if not isinstance(execution, Mapping):
         raise ReleaseEvidenceError("execution must be an object")
-    _require_keys(execution, {"run_id", "started_at", "finished_at", "candidate_sha", "artifact_refs", "host_observed_identity"}, set(execution), "execution")
+    _require_keys(execution, {"run_id", "started_at", "finished_at", "candidate_sha", "artifact_refs", "host_observed_identity"}, {"run_id", "started_at", "finished_at", "candidate_sha", "artifact_refs", "host_observed_identity"}, "execution")
     if not isinstance(execution["run_id"], str) or not re.fullmatch(r"CRR-[0-9]{8}-[0-9]{6}-[A-Za-z0-9]{4,16}", execution["run_id"]):
         raise ReleaseEvidenceError("execution.run_id is not a host-shaped run id")
     if execution["candidate_sha"] != candidate or execution["host_observed_identity"] is not True:
@@ -158,6 +162,8 @@ def validate_release_evidence(
     for path in execution["artifact_refs"]:
         if not isinstance(path, str) or not path:
             raise ReleaseEvidenceError("execution artifact refs must be bounded paths")
+        if Path(path).is_absolute() or ".." in Path(path).parts:
+            raise ReleaseEvidenceError("execution artifact ref is not repository-scoped")
         _git_bytes(candidate, path, repo_root)
 
     for field in ("sut_models", "grader_models", "runtime_hosts", "known_limitations"):
@@ -171,7 +177,7 @@ def validate_release_evidence(
     tests = record["tests"]
     if not isinstance(tests, Mapping):
         raise ReleaseEvidenceError("tests must be an object")
-    _require_keys(tests, {"total", "passed", "failed", "critical_failures", "conformance_schema", "grader_independent"}, set(tests), "tests")
+    _require_keys(tests, {"total", "passed", "failed", "critical_failures", "conformance_schema", "grader_independent"}, {"total", "passed", "failed", "critical_failures", "conformance_schema", "grader_independent"}, "tests")
     if not all(isinstance(tests[field], int) and tests[field] >= 0 for field in ("total", "passed", "failed")):
         raise ReleaseEvidenceError("test counts must be non-negative integers")
     if tests["passed"] + tests["failed"] > tests["total"]:
@@ -182,7 +188,7 @@ def validate_release_evidence(
         status = record[field]
         if not isinstance(status, Mapping):
             raise ReleaseEvidenceError(f"{field} status must be an object")
-        _require_keys(status, {"state", "evidence_refs"}, set(status), field)
+        _require_keys(status, {"state", "evidence_refs"}, {"state", "evidence_refs"}, field)
         if status["state"] not in {"PASS", "PARTIAL", "FAIL", "BLOCKED", "UNAVAILABLE"}:
             raise ReleaseEvidenceError(f"{field} contains an invalid state")
         if not isinstance(status["evidence_refs"], list):

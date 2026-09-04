@@ -8,7 +8,7 @@ Cognitive OS is a portable Agent Skill for maturing decisions before consequenti
 
 It is deliberately **not** a software delivery lifecycle or an autonomous executor. A decision may hand off to a human, a coding workflow, a research process, another agent—or to no action at all.
 
-> **Current stable release:** [`v1.4.0`](https://github.com/FilipeGCB/cognitive-os/releases/tag/v1.4.0). Behavioral conformance, live host/capability E2E, promotion CI, downstream `main` CI, and the stable release workflow all passed before publication.
+> **Current development line:** `1.5.0-dev` on the dedicated V1.5 branch. The latest stable release remains [`v1.4.0`](https://github.com/FilipeGCB/cognitive-os/releases/tag/v1.4.0); this branch does not publish a release.
 
 ## Install
 
@@ -176,6 +176,12 @@ result       = SUCCESS | PARTIAL | TRUNCATED | RATE_LIMITED | UNAVAILABLE | BLOC
 ```
 
 A capability that is installed or documented has **not** necessarily executed. Successful execution is claimed only when runtime evidence supports it.
+
+V1.5 also separates availability, authentication, run consent, invocation and
+result. Discovery does not authorize a candidate, and ephemeral external
+execution is still subject to the security/consent gate. The optional Flight
+Recorder defaults to `OFF`; its shared payload is strictly allowlisted and
+contains operational categories, never conversation content.
 
 ## Conformance
 

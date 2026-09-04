@@ -33,6 +33,12 @@ jobs:
       - name: Validate public package
         run: python tools/validate_public_package.py
 
+      - name: Validate V1.5 version synchronization
+        run: python tools/validate_version_sync.py
+
+      - name: Validate machine contracts
+        run: python tools/validate_machine_contracts.py --check-schemas
+
       - name: Public PII scan
         run: python tools/scan_public_pii.py
 

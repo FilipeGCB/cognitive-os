@@ -3,13 +3,25 @@ name: cognitive-os
 description: "Use to mature decisions before consequential action: reconstruct context, clarify the real problem, ground claims in evidence, choose proportional reasoning and research capabilities, challenge conclusions, identify the next useful proof, know when to stop, and hand off a clear recommendation without self-authorizing execution."
 ---
 
-# Cognitive OS
+# Cognitive OS V1.5
 
 ## Core rule
 
 Context before problem. Problem before solution. Evidence before confidence. Decision before execution. Textual policy is not technical enforcement.
 
 Cognitive OS is a host-neutral decision layer. It requests abstract capabilities and lets the current host map them to native tools, apps, plugins, MCPs, APIs or local adapters that are actually available.
+
+## V1.5 capability discovery and runtime truth
+
+Resolve a material capability gap in this order: inspect existing capability,
+discover local skills/tools/connectors, and consider approved external discovery
+only when it can materially reduce uncertainty. Find Skills and Find MCP are
+discovery mechanisms, not trusted candidates. Evaluate each candidate's
+provenance, license, version/ref, permissions, supply chain and Gauntlet
+independently. `npx`, `uvx`, `docker run`, a temporary MCP or downloaded script
+is still external execution and requires the same proportional security and
+consent gates. If external discovery is unavailable, say `UNAVAILABLE` and use
+an authorized fallback; never simulate a result.
 
 ## What it is
 
@@ -77,6 +89,11 @@ For material/auditable capability use, distinguish:
 
 Availability is not execution. Only runtime-observed `AVAILABLE + CALLED + SUCCESS` supports an unqualified claim that the capability executed successfully.
 
+Keep `availability`, `auth_state`, `run_consent_state`, `invocation` and
+`result` separate. In particular, `AVAILABLE + AUTHENTICATED + NOT_GRANTED +
+NOT_CALLED` is available but not authorized for this run. Account-bound use
+requires explicit run consent. Use `UNKNOWN` when runtime observation is absent.
+
 Use the smallest sufficient capability. Prefer an already available native capability over installing a redundant companion.
 
 ## Research
@@ -89,6 +106,15 @@ Research is selected by need, not by brand.
 - structured multi-page extraction → Structured Crawl when ordinary search is insufficient
 
 NotebookLM is an important implementation of Grounded Corpus Research, not a dependency of the core. See `references/research-routing.md` and `references/capabilities.md`.
+
+For Deep/Board360/Full Flow, strongly consider a grounded corpus when evidence
+must be cross-compared, internal and external sources are combined, queries
+repeat, context/compaction grows, or the open-web search has converged. Plan
+`question → subquestions → source classes → expected evidence → budget → stop
+condition` before deep research. Reassess at soft 50%/80% checkpoints and
+reserve capacity for validation, contradiction checks, challenge and closure.
+If a hard limit or rate limit is reached, freeze search, synthesize observed
+evidence, record the gap and close with the next proof instead of aborting.
 
 ## Methods
 
@@ -134,6 +160,30 @@ Account for relevant phases and conditional branches without persisting chain-of
 When Full Flow/Audit is explicitly requested and the supplied observable state is sufficient to assess the decision, do not ask for ritual clarification. Produce the human recommendation and materialize the observable audit evidence in the same response using `schemas/cognitive-run-record.md`.
 
 At minimum, account for the relevant entries in the **Phase Ledger**, **Conditional Branch Ledger**, **Capability Ledger**, **Evidence Ledger**, and **Gap / Failure Ledger**, plus the final run and decision states. Record only observable facts, classifications, statuses, source/capability evidence and material gaps. Use `NOT_APPLICABLE`, `PARTIAL`, or `BLOCKED` rather than silently omitting relevant branches. Never reconstruct or persist private chain-of-thought to fill an audit field.
+
+V1.5 audit also accounts for the Method, Challenge, Mutation, Persistent Side
+Effects, Research Budget and Provider/Host Failure ledgers. Keep
+`FLOW_COVERAGE`, `EXECUTION_INTEGRITY`, `RUN_STATUS` and `DECISION_STATE`
+independent: `TEST_REQUIRED` is not a failure, and useful persisted work may
+close as `RUN_STATUS=COMPLETE` with `EXECUTION_INTEGRITY=PARTIAL`.
+
+If the host can self-improve, pin methodology version/hash for the run, stage
+and validate patches, and activate only after closure when possible. Record
+drift and limitations when the host cannot intercept mutation. “Nothing
+installed” does not mean “nothing changed”; record file, config, package,
+connection and credential side effects separately.
+
+## Flight Recorder and privacy
+
+The optional Flight Recorder is constructed by allowlist and records how the
+run executed, not what the user researched. Shared telemetry defaults to `OFF`
+and requires preview plus explicit, revocable consent. Shared payloads contain
+only typed low-cardinality operational fields; never include prompts, responses,
+reasoning, documents, file content/names/paths, private URLs, client names,
+PII, credentials, cookies, tokens, detailed queries or free text. A host with
+no persistence/preview/send capability reports telemetry as `UNAVAILABLE` and
+continues the run normally. Forensic diagnostics are separate, bounded by
+run/window/allowlisted sources/session IDs, and opt-in.
 
 Use `schemas/cognitive-run-record.md` for observable audit evidence.
 

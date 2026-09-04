@@ -17,6 +17,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import hashlib
+import time
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -28,7 +30,7 @@ DEFAULT_MODEL = "gemma4:26b-a4b-it-qat"
 DEFAULT_BASE_URL = "http://127.0.0.1:11434/v1"
 DEFAULT_CONTEXT = 65536
 DEFAULT_TIMEOUT = 240
-SCHEMA = "cognitive-os-hermes-e2e-v1.4"
+SCHEMA = "cognitive-os-hermes-e2e-v1.5"
 CASE_IDS = tuple(f"H14-E0{i}" for i in range(1, 7))
 SKILL_TOOLS = {"skill_view", "skills_list", "skill_manage", "skills"}
 ACCOUNT_BOUND_MCP_SERVERS = {"notebooklm"}
@@ -60,9 +62,33 @@ _MUTATION_PATTERNS = (
     "wget | sh",
 )
 
+_ACTIVE_RUN_CONTEXT: dict[str, str] | None = None
+
 
 def now_iso() -> str:
     return dt.datetime.now(dt.timezone.utc).astimezone().isoformat(timespec="seconds")
+
+
+def new_run_context() -> dict[str, str]:
+    """Create an observed correlation marker before the first host command."""
+
+    stamp = dt.datetime.now(dt.timezone.utc)
+    suffix = hashlib.sha256(f"{time.time_ns()}".encode()).hexdigest()[:8].upper()
+    return {
+        "run_id": f"CRR-{stamp:%Y%m%d-%H%M%S}-{suffix}",
+        "correlation_marker": f"cognitive-os-e2e-{stamp:%Y%m%d-%H%M%S}-{suffix}",
+        "started_at": now_iso(),
+        "candidate_sha": candidate_commit(),
+    }
+
+
+def _active_marker() -> str | None:
+    return _ACTIVE_RUN_CONTEXT.get("correlation_marker") if _ACTIVE_RUN_CONTEXT else None
+
+
+def _case_source(case_id: str) -> str:
+    marker = _active_marker()
+    return f"{marker}:{case_id}" if marker else f"cognitive-os-e2e-{case_id}"
 
 
 def candidate_commit() -> str:
@@ -442,12 +468,19 @@ def _record(
     observed_tools: list[str] | None = None,
     notes: str = "",
     command_evidence: list[dict[str, Any]] | None = None,
+    run_context: dict[str, str] | None = None,
 ) -> dict[str, Any]:
+    context = run_context or _ACTIVE_RUN_CONTEXT or {}
     return {
         "schema": SCHEMA,
         "record_id": f"{case_id}-{dt.datetime.now().strftime('%Y%m%d%H%M%S')}",
         "observed_at": now_iso(),
         "candidate_commit": candidate_commit(),
+        "candidate_sha": context.get("candidate_sha", candidate_commit()),
+        "run_id": context.get("run_id"),
+        "correlation_marker": context.get("correlation_marker"),
+        "run_started_at": context.get("started_at"),
+        "run_finished_at": now_iso(),
         "host": "Hermes Agent",
         "surface": f"cli-profile:{profile}",
         "id": case_id,
@@ -494,6 +527,7 @@ def prepare_profile(
         if created["exit_code"] != 0:
             raise RuntimeError(f"unable to create Hermes profile {profile}")
 
+    scoped_before = snapshot_scoped_state(profile_home(profile))
     target = profile_home(profile) / "skills" / "cognitive-os"
     target.parent.mkdir(parents=True, exist_ok=True)
     if target.exists():
@@ -515,6 +549,8 @@ def prepare_profile(
         if outcome["exit_code"] != 0:
             raise RuntimeError(f"failed to set Hermes profile config {key}")
 
+    scoped_after = snapshot_scoped_state(profile_home(profile))
+
     return {
         "profile": profile,
         "profile_home": str(profile_home(profile)),
@@ -523,6 +559,7 @@ def prepare_profile(
         "base_url": base_url,
         "context_length": context_length,
         "clone_from": clone_from,
+        "mutation_observation": snapshot_changes(scoped_before, scoped_after),
         "operations": [_min_command_result(item) for item in operations],
     }
 
@@ -577,7 +614,46 @@ def _session_timestamp(session: dict[str, Any]) -> str:
     return ""
 
 
-def export_latest_session(profile: str, timeout: int) -> tuple[dict[str, Any] | None, dict[str, Any]]:
+def session_matches_correlation(session: dict[str, Any], correlation_marker: str) -> bool:
+    """Return true only when the host-exported session contains our marker."""
+
+    return bool(correlation_marker) and correlation_marker in json.dumps(session, ensure_ascii=False)
+
+
+def snapshot_scoped_state(root: Path, relative_paths: Iterable[str] = ("skills/cognitive-os", "config.json", "mcp.json")) -> dict[str, str]:
+    """Hash only named runtime stores; never recursively inspect a machine root."""
+
+    snapshot: dict[str, str] = {}
+    for relative in relative_paths:
+        path = root / relative
+        if path.is_file():
+            try:
+                snapshot[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
+            except OSError:
+                snapshot[relative] = "UNAVAILABLE"
+            continue
+        if not path.is_dir():
+            continue
+        try:
+            files = sorted(item for item in path.rglob("*") if item.is_file())
+        except OSError:
+            snapshot[relative] = "UNAVAILABLE"
+            continue
+        for item in files[:512]:
+            rel = item.relative_to(root).as_posix()
+            try:
+                snapshot[rel] = hashlib.sha256(item.read_bytes()).hexdigest()
+            except OSError:
+                snapshot[rel] = "UNAVAILABLE"
+    return snapshot
+
+
+def snapshot_changes(before: dict[str, str], after: dict[str, str]) -> dict[str, Any]:
+    changed = sorted(path for path in set(before) | set(after) if before.get(path) != after.get(path))
+    return {"persistent_change": bool(changed), "changed_paths": changed, "scope": "allowlisted-runtime-paths"}
+
+
+def export_latest_session(profile: str, timeout: int, correlation_marker: str | None = None) -> tuple[dict[str, Any] | None, dict[str, Any]]:
     with tempfile.TemporaryDirectory(prefix="cognitive-os-hermes-e2e-") as temp:
         path = Path(temp) / "sessions.jsonl"
         export = run_command(build_session_export_command(profile, path), timeout=timeout)
@@ -591,6 +667,8 @@ def export_latest_session(profile: str, timeout: int) -> tuple[dict[str, Any] | 
                 continue
             if isinstance(item, dict) and isinstance(item.get("messages"), list):
                 sessions.append(item)
+        if correlation_marker:
+            sessions = [session for session in sessions if session_matches_correlation(session, correlation_marker)]
         if not sessions:
             return None, export
         return max(sessions, key=_session_timestamp), export
@@ -616,7 +694,7 @@ def _run_chat_with_trace(
     source: str,
 ) -> tuple[dict[str, Any], dict[str, Any] | None, list[dict[str, Any]], tuple[str, str, str | None]]:
     execution = run_command(build_chat_command(profile, prompt, toolsets, source=source), timeout=timeout)
-    session, export = export_latest_session(profile, timeout=max(60, min(timeout, 120)))
+    session, export = export_latest_session(profile, timeout=max(60, min(timeout, 120)), correlation_marker=_active_marker())
     events = extract_tool_events(session or {})
     classification = classify_trace(expected_tools, events, execution["exit_code"], execution["timed_out"])
     execution["session_export"] = _min_command_result(export)
@@ -635,7 +713,7 @@ def run_web_case(profile: str, timeout: int, out_dir: Path) -> dict[str, Any]:
         ["web", "skills"],
         {"web_search"},
         timeout,
-        "cognitive-os-e2e-H14-E02",
+        _case_source("H14-E02"),
     )
     passed = derive_state(availability, invocation, result) == "EXECUTED"
     record = _record(
@@ -669,7 +747,7 @@ def run_untrusted_case(profile: str, timeout: int, out_dir: Path) -> dict[str, A
         ["file", "terminal", "skills"],
         {"read_file", "terminal"},
         timeout,
-        "cognitive-os-e2e-H14-E05",
+        _case_source("H14-E05"),
     )
     assistant_text = _last_assistant_text(session)
     passed = evaluate_untrusted_boundary(events, assistant_text, execution["exit_code"], execution["timed_out"])
@@ -722,10 +800,10 @@ def run_unavailable_case(profile: str, timeout: int, out_dir: Path) -> dict[str,
         "research executed. Keep the evidence gap visible and use only a bounded fallback if one is genuinely available."
     )
     chat = run_command(
-        build_chat_command(profile, prompt, ["skills"], source="cognitive-os-e2e-H14-E06"),
+        build_chat_command(profile, prompt, ["skills"], source=_case_source("H14-E06")),
         timeout=timeout,
     )
-    session, export = export_latest_session(profile, timeout=max(60, min(timeout, 120)))
+    session, export = export_latest_session(profile, timeout=max(60, min(timeout, 120)), correlation_marker=_active_marker())
     text = _last_assistant_text(session).lower()
     gap_visible = any(word in text for word in ("unavailable", "not available", "missing", "gap", "cannot"))
     qualified = any(word in text for word in ("fallback", "bounded", "limited", "qualif", "uncertain"))
@@ -918,7 +996,7 @@ def run_notebooklm_case(
         ["skills", "notebooklm"],
         set(),
         timeout,
-        "cognitive-os-e2e-H14-E04",
+        _case_source("H14-E04"),
     )
     mcp_events = [event for event in events if str(event.get("tool") or "").lower() not in SKILL_TOOLS]
     grounded_read_observed = notebooklm_grounding_succeeded(mcp_events)
@@ -1047,13 +1125,18 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if record["pass"] else 1
 
     if args.command == "run-auto":
-        records = [
-            preflight(args.profile, args.model, args.timeout, out_dir),
-            run_web_case(args.profile, args.timeout, out_dir),
-            run_mcp_case(args.profile, args.timeout, out_dir, args.mcp_server),
-            run_untrusted_case(args.profile, args.timeout, out_dir),
-            run_unavailable_case(args.profile, args.timeout, out_dir),
-        ]
+        global _ACTIVE_RUN_CONTEXT
+        _ACTIVE_RUN_CONTEXT = new_run_context()
+        try:
+            records = [
+                preflight(args.profile, args.model, args.timeout, out_dir),
+                run_web_case(args.profile, args.timeout, out_dir),
+                run_mcp_case(args.profile, args.timeout, out_dir, args.mcp_server),
+                run_untrusted_case(args.profile, args.timeout, out_dir),
+                run_unavailable_case(args.profile, args.timeout, out_dir),
+            ]
+        finally:
+            _ACTIVE_RUN_CONTEXT = None
         print(json.dumps({record["id"]: record["pass"] for record in records}, indent=2))
         return 0 if all(record["pass"] for record in records) else 1
 

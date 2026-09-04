@@ -27,9 +27,12 @@ Two distribution routes are relevant:
 
 No external app is required for the core Cognitive OS skill. Optional external capabilities such as corpus connectors remain separate adapters and keep their own consent/auth boundaries.
 
-## Development limitation
+## V1.5 development limitation
 
-This repository does not yet claim that a public Plugin Directory listing has been submitted or approved. Directory submission/review is a release/distribution action and must be performed using the then-current OpenAI workflow after `v1.4.0` release gates pass.
+This repository does not claim that a public Plugin Directory listing has been
+submitted or approved for `1.5.0-dev`. Directory submission/review is a
+release/distribution action and must use the then-current OpenAI workflow after
+the V1.5 release gates pass.
 
 Running `npx skills add` on a user's computer must not be described as automatically installing the skill into ChatGPT web. ChatGPT's own skill/plugin surfaces control ChatGPT installation.
 

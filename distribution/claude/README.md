@@ -35,7 +35,9 @@ Claude also supports skills as self-contained folders. Where a Claude surface su
 
 ## Update behavior
 
-During development the Claude marketplace entry intentionally omits a plugin version so repository commits can be tested without pretending they are stable releases. Before stable release, the distribution manifest should be reconciled with the selected Cognitive OS version/tag strategy.
+During `1.5.0-dev` the marketplace entry is a development artifact. The
+distribution manifest records the package version and projected assets; a
+stable tag/version must be reconciled before release.
 
 ## Marketplace discovery
 

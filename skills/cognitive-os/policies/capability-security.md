@@ -1,4 +1,4 @@
-# Capability Security Policy — Cognitive OS v1.4
+# Capability Security Policy — Cognitive OS v1.5
 
 ## Principles
 
@@ -9,6 +9,9 @@
 5. Sensitive capabilities require proportional preflight.
 6. Current runtime evidence is distinct from historical baseline/documentation.
 7. A capability decision is governance; it does not itself enforce permissions.
+8. A discovery asset is a search mechanism, not approval of a candidate.
+9. Ephemeral execution is execution; avoiding persistent installation does not
+   bypass provenance, Gauntlet, least privilege or consent.
 
 ## Promotion gate for sensitive capabilities
 
@@ -27,6 +30,19 @@ Before promotion, observe proportionally:
 - preflight result.
 
 If a critical security, permission, read/write, credential/data-access or preflight field is `UNKNOWN`, do not mark a sensitive capability `approved`.
+
+## Discovery and execution boundary
+
+The pipeline is `material gap → existing capability → local discovery →
+external discovery when useful → shortlist → candidate provenance → Gauntlet →
+consent when needed → use/install/connect → runtime verification`. Find Skills
+and Find MCP are only discovery assets. Each candidate must be assessed using
+its own origin, immutable/versioned reference, license, permissions, supply
+chain and observed result.
+
+`npx`, `uvx`, `docker run`, a temporary MCP, a downloaded script and any other
+download-and-execute path are treated as external execution. “Not installed”
+is not a security or consent exemption.
 
 ## Financial and regulated data
 

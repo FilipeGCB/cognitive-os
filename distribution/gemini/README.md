@@ -34,4 +34,4 @@ Gemini's skill activation consent is independent from Cognitive OS's **capabilit
 
 ## Gallery/discovery
 
-Listing an extension in any Gemini CLI gallery is a separate release/distribution step. Re-verify current gallery eligibility/submission rules at release time and do not claim a listing until it is observed.
+Listing an extension in any Gemini CLI gallery is a separate release/distribution step. The current wrapper is `1.5.0-dev`; re-verify current gallery eligibility/submission rules at release time and do not claim a listing until it is observed.

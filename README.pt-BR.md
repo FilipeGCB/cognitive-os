@@ -8,7 +8,7 @@ Cognitive OS é uma **Agent Skill portátil** para amadurecer decisões antes de
 
 Ela **não** é um ciclo de desenvolvimento de software nem um executor autônomo. Uma decisão pode terminar em ação humana, workflow de código, pesquisa adicional, outro agente — ou em nenhuma ação.
 
-> **Versão estável atual:** [`v1.4.0`](https://github.com/FilipeGCB/cognitive-os/releases/tag/v1.4.0). Conformidade comportamental, E2E real de host/capabilities, CI de promoção, CI de `main` e workflow de release passaram antes da publicação.
+> **Linha de desenvolvimento atual:** `1.5.0-dev` na branch dedicada da V1.5. A última versão estável continua sendo [`v1.4.0`](https://github.com/FilipeGCB/cognitive-os/releases/tag/v1.4.0); esta branch não publica release.
 
 ## Instalação
 
@@ -155,6 +155,12 @@ result       = SUCCESS | PARTIAL | TRUNCATED | RATE_LIMITED | UNAVAILABLE | BLOC
 ```
 
 Uma capability instalada ou documentada **não significa** que ela foi executada. Execução bem-sucedida só é declarada quando existe evidência de runtime que a sustente.
+
+Na V1.5, disponibilidade, autenticação, consentimento do run, invocação e
+resultado também são estados separados. Discovery não autoriza uma capability
+candidata, e execução efêmera externa continua sujeita aos gates de segurança e
+consentimento. O Flight Recorder opcional começa em `OFF`; o payload
+compartilhado é allowlisted e nunca contém conteúdo da conversa.
 
 ## Evidência da v1.4.0
 

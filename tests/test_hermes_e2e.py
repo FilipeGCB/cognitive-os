@@ -298,6 +298,31 @@ class HermesE2EHarnessTests(unittest.TestCase):
 
         self.assertEqual(exit_code, 1)
 
+    def test_session_binding_rejects_stale_or_concurrent_export(self):
+        marker = "cognitive-os-e2e-20260904-120000-ABCD"
+        self.assertTrue(h.session_matches_correlation({"source": marker, "messages": []}, marker))
+        self.assertFalse(h.session_matches_correlation({"source": "older-run", "messages": []}, marker))
+
+    def test_run_context_is_host_shaped_and_candidate_bound(self):
+        with patch.object(h, "candidate_commit", return_value="a" * 40):
+            context = h.new_run_context()
+        self.assertRegex(context["run_id"], r"^CRR-[0-9]{8}-[0-9]{6}-[A-Z0-9]{8}$")
+        self.assertEqual(context["candidate_sha"], "a" * 40)
+        self.assertIn(context["correlation_marker"], h.build_chat_command("p", "q", ["skills"], source=context["correlation_marker"]))
+
+    def test_scoped_snapshot_detects_file_change_without_write_tool(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "skills" / "cognitive-os").mkdir(parents=True)
+            target = root / "skills" / "cognitive-os" / "SKILL.md"
+            target.write_text("before", encoding="utf-8")
+            before = h.snapshot_scoped_state(root)
+            target.write_text("after", encoding="utf-8")
+            after = h.snapshot_scoped_state(root)
+        change = h.snapshot_changes(before, after)
+        self.assertTrue(change["persistent_change"])
+        self.assertIn("skills/cognitive-os/SKILL.md", change["changed_paths"])
+
 
 if __name__ == "__main__":
     unittest.main()
