@@ -40,8 +40,8 @@ class SkillStructureTests(unittest.TestCase):
         for token in required:
             self.assertIn(token, text)
 
-    def test_dev_version_is_explicit(self):
-        self.assertEqual((SKILL / "VERSION").read_text(encoding="utf-8").strip(), "1.4.0-dev")
+    def test_stable_version_is_explicit(self):
+        self.assertEqual((SKILL / "VERSION").read_text(encoding="utf-8").strip(), "1.4.0")
 
 
 if __name__ == "__main__":
