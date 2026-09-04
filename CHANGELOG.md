@@ -2,7 +2,7 @@
 
 All notable public Cognitive OS changes are recorded here.
 
-## Unreleased — v1.4.0-dev
+## v1.4.0 — 2026-09-04
 
 ### Added
 
@@ -20,13 +20,14 @@ All notable public Cognitive OS changes are recorded here.
 - optional dependency-free Decision Brief HTML renderer;
 - public behavior/output eval manifests and deterministic package guards.
 
-### Release blockers
+### Verified for release promotion
 
-- select and add the Cognitive OS project license;
-- complete fresh v1.4 behavioral conformance;
-- run supported-host installation tests;
-- complete candidate companion runtime/preflight tests before any `supported` promotion;
-- run a stronger secret/PII scan in addition to the deterministic repository guard;
-- verify distribution packaging against each target ecosystem at release time.
+- Apache License 2.0 present and authoritative at the repository root;
+- fresh v1.4 behavioral conformance passed 29/29 with Gemma and 29/29 with an independent Qwen cross-grader, with zero critical failures and zero grader disagreements;
+- live Hermes capability E2E passed 6/6 on one candidate SHA, including Web Search, MCP discovery, read-only NotebookLM Grounded Corpus Research with observed `source_read`, prompt-injection/authorization boundary behavior, and explicit unavailable-capability handling;
+- Agent Skills discovery/install smoke tests passed for Codex, Claude Code and Gemini CLI;
+- the pinned `notebooklm-py[mcp]==0.8.2` candidate installed and exposed its CLI/MCP entrypoints in CI;
+- repository-history Gitleaks secret scan passed;
+- public-package, PII, renderer and Python compile checks passed.
 
-No stable `v1.4.0` tag has been created.
+The stable `v1.4.0` tag is created only after the final promotion commit passes CI on the feature branch, the PR is explicitly approved for merge, and downstream `main` CI satisfies the release workflow.
