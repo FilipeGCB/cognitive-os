@@ -107,6 +107,7 @@ _EXECUTION_RESULT_STATE = {
 
 _RUN_ID = re.compile(r"^CRR-[0-9]{8}-[0-9]{6}-[A-Za-z0-9]{4,16}$")
 _CAPABILITY_ID = re.compile(r"^CAP-[0-9]{8}-[A-Za-z0-9]{4,16}$")
+_MANIFEST_ID = re.compile(r"^FDM-[0-9]{8}-[0-9]{6}-[A-Za-z0-9]{4,16}$")
 _EVIDENCE_REF = re.compile(r"^[A-Za-z0-9][A-Za-z0-9+._:/#?=&@%~,'()\-]{1,511}$")
 _SAFE_TEXT = re.compile(r"^[^\r\n\x00]{1,512}$")
 
@@ -216,6 +217,189 @@ def _validate_ledger_list(values: Any, name: str) -> None:
             raise ContractError(f"{name} items must be objects")
 
 
+def _validate_run_ledgers(record: Mapping[str, Any]) -> None:
+    """Validate the observable fields most likely to carry false claims."""
+
+    capability_allowed = {
+        "capability", "category", "need", "discovery_class", "availability", "auth_state",
+        "run_consent_state", "invocation", "result", "source_or_adapter", "candidate_provenance",
+        "consent_required", "consent_state", "fallback", "materiality", "evidence_refs",
+    }
+    capability_required = capability_allowed
+    for index, item in enumerate(record["capability_ledger"]):
+        _keys(item, required=capability_required, allowed=capability_allowed, name=f"capability_ledger[{index}]")
+        _safe_text(item["capability"], f"capability_ledger[{index}].capability")
+        _safe_text(item["category"], f"capability_ledger[{index}].category")
+        _safe_text(item["need"], f"capability_ledger[{index}].need")
+        _enum(f"capability_ledger[{index}].discovery_class", item["discovery_class"], DISCOVERY_CLASS)
+        for field, values in (("availability", AVAILABILITY), ("auth_state", AUTH_STATE), ("run_consent_state", RUN_CONSENT_STATE), ("invocation", INVOCATION), ("result", RESULT)):
+            _enum(f"capability_ledger[{index}].{field}", item[field], values)
+        if not isinstance(item["consent_required"], bool):
+            raise ContractError(f"capability_ledger[{index}].consent_required must be boolean")
+        _enum(f"capability_ledger[{index}].consent_state", item["consent_state"], RUN_CONSENT_STATE)
+        _enum(f"capability_ledger[{index}].materiality", item["materiality"], {"MATERIAL", "NON_MATERIAL", "UNKNOWN"})
+        _validate_ref_list(item["evidence_refs"], f"capability_ledger[{index}].evidence_refs")
+        provenance = item["candidate_provenance"]
+        _keys(provenance, required={"provenance_class"}, allowed={"provenance_class", "source", "observed_at"}, name=f"capability_ledger[{index}].candidate_provenance")
+        _enum(f"capability_ledger[{index}].candidate_provenance.provenance_class", provenance["provenance_class"], PROVENANCE)
+        if "source" in provenance:
+            validate_evidence_ref(provenance["source"])
+        if "observed_at" in provenance:
+            _timestamp(provenance["observed_at"], f"capability_ledger[{index}].candidate_provenance.observed_at")
+        evidence_refs = _validate_ref_list(item["evidence_refs"], f"capability_ledger[{index}].evidence_refs")
+        if item["invocation"] == "CALLED" and not evidence_refs:
+            raise ContractError(f"capability_ledger[{index}] CALLED requires runtime evidence")
+        if item["result"] == "SUCCESS" and not evidence_refs:
+            raise ContractError(f"capability_ledger[{index}] SUCCESS requires runtime evidence")
+        derive_execution_state(item["availability"], item["auth_state"], item["run_consent_state"], item["invocation"], item["result"], consent_required=item["consent_required"])
+
+    evidence_allowed = {"claim_ref", "classification", "source_ref", "ref_date_version", "provenance", "note"}
+    for index, item in enumerate(record["evidence_ledger"]):
+        _keys(item, required={"claim_ref", "classification", "source_ref", "provenance"}, allowed=evidence_allowed, name=f"evidence_ledger[{index}]")
+        _safe_text(item["claim_ref"], f"evidence_ledger[{index}].claim_ref")
+        _enum(f"evidence_ledger[{index}].classification", item["classification"], {"FACT", "EVIDENCE", "INFERENCE", "HYPOTHESIS", "ASSUMPTION", "PREFERENCE", "UNKNOWN", "CONTRADICTION"})
+        validate_evidence_ref(item["source_ref"])
+        _enum(f"evidence_ledger[{index}].provenance", item["provenance"], PROVENANCE)
+
+    mutation_allowed = {"mutation_id", "type", "target", "before_version_or_hash", "after_version_or_hash", "trigger", "applied_at", "applied_during_active_run", "validation", "affected_phases", "rollback_available", "status"}
+    for index, item in enumerate(record["mutation_ledger"]):
+        _keys(item, required=mutation_allowed, allowed=mutation_allowed, name=f"mutation_ledger[{index}]")
+        _enum(f"mutation_ledger[{index}].type", item["type"], {"SKILL_MUTATED", "REFERENCE_MUTATED", "POLICY_MUTATED", "CONFIG_CHANGED", "PACKAGE_INSTALLED", "MCP_INSTALLED", "CONNECTION_CREATED", "FILE_CREATED", "FILE_MODIFIED", "CREDENTIAL_STATE_CHANGED", "OTHER_PERSISTENT_SIDE_EFFECT"})
+        _timestamp(item["applied_at"], f"mutation_ledger[{index}].applied_at")
+        for field in ("applied_during_active_run", "rollback_available"):
+            if not isinstance(item[field], bool):
+                raise ContractError(f"mutation_ledger[{index}].{field} must be boolean")
+        _enum(f"mutation_ledger[{index}].validation", item["validation"], {"PASS", "FAIL", "PARTIAL", "UNKNOWN", "NOT_APPLICABLE"})
+        _enum(f"mutation_ledger[{index}].status", item["status"], {"STAGED", "APPLIED", "BLOCKED", "REJECTED", "REVERTED"})
+        for field in ("mutation_id", "target", "before_version_or_hash", "after_version_or_hash", "trigger"):
+            _safe_text(item[field], f"mutation_ledger[{index}].{field}")
+        if not isinstance(item["affected_phases"], list) or any(not isinstance(value, str) or not value for value in item["affected_phases"]):
+            raise ContractError(f"mutation_ledger[{index}].affected_phases must be a list of bounded strings")
+
+
+def _validate_auxiliary_ledgers(record: Mapping[str, Any]) -> None:
+    """Validate the remaining Full Flow/Audit ledgers and closure objects."""
+
+    phase_statuses = {"COMPLETE", "PARTIAL", "BLOCKED", "NOT_APPLICABLE"}
+    for index, item in enumerate(record["phase_ledger"]):
+        _keys(item, required={"phase", "status", "evidence_refs", "material_gap"}, allowed={"phase", "status", "evidence_refs", "material_gap", "provenance"}, name=f"phase_ledger[{index}]")
+        _safe_text(item["phase"], f"phase_ledger[{index}].phase")
+        _enum(f"phase_ledger[{index}].status", item["status"], phase_statuses)
+        _validate_ref_list(item["evidence_refs"], f"phase_ledger[{index}].evidence_refs")
+        if not isinstance(item["material_gap"], str) or len(item["material_gap"]) > 512 or "\n" in item["material_gap"] or "\x00" in item["material_gap"]:
+            raise ContractError(f"phase_ledger[{index}].material_gap must be bounded text")
+        if "provenance" in item:
+            _enum(f"phase_ledger[{index}].provenance", item["provenance"], PROVENANCE)
+
+    for index, item in enumerate(record["conditional_branch_ledger"]):
+        _keys(item, required={"branch", "applicable", "status", "evidence_refs"}, allowed={"branch", "applicable", "status", "evidence_refs", "reason"}, name=f"conditional_branch_ledger[{index}]")
+        _safe_text(item["branch"], f"conditional_branch_ledger[{index}].branch")
+        if not isinstance(item["applicable"], bool):
+            raise ContractError(f"conditional_branch_ledger[{index}].applicable must be boolean")
+        _enum(f"conditional_branch_ledger[{index}].status", item["status"], phase_statuses)
+        if not item["applicable"] and item["status"] != "NOT_APPLICABLE":
+            raise ContractError(f"conditional_branch_ledger[{index}] non-applicable branch must be NOT_APPLICABLE")
+        _validate_ref_list(item["evidence_refs"], f"conditional_branch_ledger[{index}].evidence_refs")
+        if "reason" in item:
+            _safe_text(item["reason"], f"conditional_branch_ledger[{index}].reason", 1024)
+
+    for index, item in enumerate(record["method_ledger"]):
+        _keys(item, required={"method", "used", "reason", "observable_result"}, allowed={"method", "used", "reason", "observable_result", "evidence_refs"}, name=f"method_ledger[{index}]")
+        for field in ("method", "reason", "observable_result"):
+            _safe_text(item[field], f"method_ledger[{index}].{field}")
+        if not isinstance(item["used"], bool):
+            raise ContractError(f"method_ledger[{index}].used must be boolean")
+        if "evidence_refs" in item:
+            _validate_ref_list(item["evidence_refs"], f"method_ledger[{index}].evidence_refs")
+
+    for index, item in enumerate(record["gap_failure_ledger"]):
+        _keys(item, required={"gap", "state", "recovery_attempted", "evidence_still_missing", "impact"}, allowed={"gap", "state", "recovery_attempted", "evidence_still_missing", "impact"}, name=f"gap_failure_ledger[{index}]")
+        _safe_text(item["gap"], f"gap_failure_ledger[{index}].gap")
+        _enum(f"gap_failure_ledger[{index}].state", item["state"], {"UNKNOWN", "PARTIAL", "BLOCKED", "RATE_LIMITED", "FAILED", "TRUNCATED", "UNAVAILABLE"})
+        if not isinstance(item["recovery_attempted"], bool):
+            raise ContractError(f"gap_failure_ledger[{index}].recovery_attempted must be boolean")
+        _validate_ref_list(item["evidence_still_missing"], f"gap_failure_ledger[{index}].evidence_still_missing")
+        _enum(f"gap_failure_ledger[{index}].impact", item["impact"], {"MATERIAL", "NON_MATERIAL", "UNKNOWN"})
+
+    for index, item in enumerate(record["challenge_ledger"]):
+        _keys(item, required={"attack", "evidence_or_plausibility", "what_would_break", "recommendation_impact", "mitigation_or_next_proof"}, allowed={"attack", "evidence_or_plausibility", "what_would_break", "recommendation_impact", "mitigation_or_next_proof", "evidence_refs"}, name=f"challenge_ledger[{index}]")
+        for field in ("attack", "evidence_or_plausibility", "what_would_break", "mitigation_or_next_proof"):
+            _safe_text(item[field], f"challenge_ledger[{index}].{field}")
+        _enum(f"challenge_ledger[{index}].recommendation_impact", item["recommendation_impact"], {"maintains", "weakens", "conditions", "reverses"})
+        if "evidence_refs" in item:
+            _validate_ref_list(item["evidence_refs"], f"challenge_ledger[{index}].evidence_refs")
+
+    side_effect_types = {"SKILL_MUTATED", "REFERENCE_MUTATED", "POLICY_MUTATED", "CONFIG_CHANGED", "PACKAGE_INSTALLED", "MCP_INSTALLED", "CONNECTION_CREATED", "FILE_CREATED", "FILE_MODIFIED", "CREDENTIAL_STATE_CHANGED", "OTHER_PERSISTENT_SIDE_EFFECT"}
+    for index, item in enumerate(record["persistent_side_effects"]):
+        _keys(item, required={"type", "observed", "evidence_refs"}, allowed={"type", "observed", "target_class", "evidence_refs"}, name=f"persistent_side_effects[{index}]")
+        _enum(f"persistent_side_effects[{index}].type", item["type"], side_effect_types)
+        if not isinstance(item["observed"], bool):
+            raise ContractError(f"persistent_side_effects[{index}].observed must be boolean")
+        if "target_class" in item:
+            _safe_text(item["target_class"], f"persistent_side_effects[{index}].target_class", 128)
+        _validate_ref_list(item["evidence_refs"], f"persistent_side_effects[{index}].evidence_refs")
+
+    budget = record["research_budget"]
+    _keys(budget, required={"planned", "consumed", "checkpoints", "stop_reason"}, allowed={"planned", "consumed", "checkpoints", "stop_reason"}, name="research_budget")
+    units = {"web_calls", "source_count", "elapsed_seconds", "context_fraction"}
+    for field in ("planned", "consumed"):
+        counters = budget[field]
+        if not isinstance(counters, Mapping) or set(counters) - units:
+            raise ContractError(f"research_budget.{field} contains an unknown counter")
+        for unit, counter in counters.items():
+            _keys(counter, required={"value", "soft_limit", "hard_limit", "observable"}, allowed={"value", "soft_limit", "hard_limit", "observable"}, name=f"research_budget.{field}.{unit}")
+            if not isinstance(counter["observable"], bool):
+                raise ContractError(f"research_budget.{field}.{unit}.observable must be boolean")
+            for counter_name in ("value", "soft_limit", "hard_limit"):
+                value = counter[counter_name]
+                if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0):
+                    raise ContractError(f"research_budget.{field}.{unit}.{counter_name} must be a non-negative number or null")
+            if counter["soft_limit"] is not None and counter["hard_limit"] is not None and counter["soft_limit"] > counter["hard_limit"]:
+                raise ContractError(f"research_budget.{field}.{unit} soft limit exceeds hard limit")
+            if counter["observable"] is False and counter["value"] is not None:
+                raise ContractError(f"research_budget.{field}.{unit} cannot claim an unobservable value")
+    if not isinstance(budget["checkpoints"], list):
+        raise ContractError("research_budget.checkpoints must be an array")
+    for index, checkpoint in enumerate(budget["checkpoints"]):
+        _keys(checkpoint, required={"at", "decision", "reserved_for_closure"}, allowed={"at", "decision", "reserved_for_closure"}, name=f"research_budget.checkpoints[{index}]")
+        _enum(f"research_budget.checkpoints[{index}].at", checkpoint["at"], {"50_PERCENT", "80_PERCENT", "BEFORE_HARD_LIMIT", "COMPACTION", "MIGRATION_TRIGGER"})
+        _enum(f"research_budget.checkpoints[{index}].decision", checkpoint["decision"], {"CONTINUE", "MIGRATE_TO_CORPUS", "STOP_RESEARCH_AND_TEST", "FREEZE_AND_SYNTHESIZE", "UNKNOWN"})
+        if not isinstance(checkpoint["reserved_for_closure"], bool):
+            raise ContractError(f"research_budget.checkpoints[{index}].reserved_for_closure must be boolean")
+    _safe_text(budget["stop_reason"], "research_budget.stop_reason")
+
+    for index, item in enumerate(record["provider_host_failures"]):
+        _keys(item, required={"provider_or_host", "failure_class", "state", "fallback", "closure_emitted"}, allowed={"provider_or_host", "failure_class", "state", "fallback", "closure_emitted"}, name=f"provider_host_failures[{index}]")
+        _safe_text(item["provider_or_host"], f"provider_host_failures[{index}].provider_or_host")
+        _enum(f"provider_host_failures[{index}].failure_class", item["failure_class"], {"UNSUPPORTED_PARAMETER", "RATE_LIMITED", "TIMEOUT", "TRUNCATED", "PROVIDER_ERROR", "TOOL_ERROR", "UNKNOWN"})
+        _enum(f"provider_host_failures[{index}].state", item["state"], {"AVAILABLE", "UNAVAILABLE", "PARTIAL", "FAILED", "BLOCKED", "UNKNOWN"})
+        _enum(f"provider_host_failures[{index}].fallback", item["fallback"], {"NONE", "SUPPORTED_SETTING", "ALTERNATE_PROVIDER", "PERSISTED_RUN_STATE", "MANUAL_NEXT_PROOF", "UNKNOWN"})
+        if not isinstance(item["closure_emitted"], bool):
+            raise ContractError(f"provider_host_failures[{index}].closure_emitted must be boolean")
+
+    _keys(record["stop"], required={"state", "reason"}, allowed={"state", "reason", "material_unknowns_remaining", "budget_consumed"}, name="run_record.stop")
+    _enum("run_record.stop.state", record["stop"]["state"], {"STOP", "CONTINUE", "STOP_RESEARCH_AND_TEST"})
+    _safe_text(record["stop"]["reason"], "run_record.stop.reason")
+    if "material_unknowns_remaining" in record["stop"] and not isinstance(record["stop"]["material_unknowns_remaining"], bool):
+        raise ContractError("run_record.stop.material_unknowns_remaining must be boolean")
+    if "budget_consumed" in record["stop"]:
+        _safe_text(record["stop"]["budget_consumed"], "run_record.stop.budget_consumed")
+
+    if record["next_proof"] is not None:
+        proof = record["next_proof"]
+        _keys(proof, required={"hypothesis", "question_tested", "smallest_experiment", "metric", "information_value"}, allowed={"hypothesis", "question_tested", "smallest_experiment", "data_needed", "metric", "proposed_threshold", "information_value", "what_changes_if_pass", "what_changes_if_fail"}, name="run_record.next_proof")
+        for field in ("hypothesis", "question_tested", "smallest_experiment", "metric"):
+            _safe_text(proof[field], f"run_record.next_proof.{field}")
+        _enum("run_record.next_proof.information_value", proof["information_value"], {"HIGH", "MEDIUM", "LOW"})
+        for field in ("data_needed", "proposed_threshold", "what_changes_if_pass", "what_changes_if_fail"):
+            if field in proof:
+                _safe_text(proof[field], f"run_record.next_proof.{field}")
+
+    for index, item in enumerate(record["evidence_ledger"]):
+        if item.get("provenance") == "MODEL_SYNTHESIZED" and item.get("classification") in {"FACT", "EVIDENCE"}:
+            raise ContractError(f"evidence_ledger[{index}] cannot call model synthesis a fact/evidence")
+
+
 def validate_run_record(record: Mapping[str, Any]) -> Mapping[str, Any]:
     """Validate the trust-bearing subset of a Cognitive Run Record."""
 
@@ -250,11 +434,15 @@ def validate_run_record(record: Mapping[str, Any]) -> Mapping[str, Any]:
     _keys(record, required=required, allowed=allowed, name="run_record")
     if not isinstance(record["id"], str) or not _RUN_ID.fullmatch(record["id"]):
         raise ContractError("run_record.id must be a host-shaped CRR id")
-    if not isinstance(record["schema_version"], str) or not record["schema_version"].startswith("cognitive-os-run-record-v1."):
+    if record["schema_version"] != "cognitive-os-run-record-v1.5":
         raise ContractError("unsupported run_record schema_version")
     _timestamp(record["created_at"], "run_record.created_at")
     if "finished_at" in record:
         _timestamp(record["finished_at"], "run_record.finished_at")
+        created = _dt.datetime.fromisoformat(record["created_at"].replace("Z", "+00:00"))
+        finished = _dt.datetime.fromisoformat(record["finished_at"].replace("Z", "+00:00"))
+        if finished < created:
+            raise ContractError("run_record.finished_at cannot precede created_at")
     _safe_text(record["host"], "run_record.host")
     _safe_text(record["surface"], "run_record.surface")
     _enum("depth", record["depth"], DEPTH)
@@ -278,12 +466,11 @@ def validate_run_record(record: Mapping[str, Any]) -> Mapping[str, Any]:
         "provider_host_failures",
     ):
         _validate_ledger_list(record[field], f"run_record.{field}")
+    _validate_run_ledgers(record)
     if not isinstance(record["research_budget"], Mapping):
         raise ContractError("run_record.research_budget must be an object")
-    if not isinstance(record["stop"], Mapping):
-        raise ContractError("run_record.stop must be an object")
-    if not isinstance(record["telemetry"], Mapping):
-        raise ContractError("run_record.telemetry must be an object")
+    _validate_auxiliary_ledgers(record)
+    _keys(record["telemetry"], required={"mode", "state"}, allowed={"mode", "state", "trace_ref", "consent_policy_version"}, name="run_record.telemetry")
     _enum("telemetry.mode", record["telemetry"].get("mode"), TELEMETRY_MODE)
     _enum("telemetry.state", record["telemetry"].get("state"), TELEMETRY_STATE)
     if record["next_proof"] is not None and not isinstance(record["next_proof"], Mapping):
@@ -330,7 +517,7 @@ def validate_capability_decision(record: Mapping[str, Any]) -> Mapping[str, Any]
     _keys(record, required=required, allowed=allowed, name="capability_decision")
     if not isinstance(record["id"], str) or not _CAPABILITY_ID.fullmatch(record["id"]):
         raise ContractError("capability_decision.id must be a host-shaped CAP id")
-    if not isinstance(record["schema_version"], str) or not record["schema_version"].startswith("cognitive-os-capability-decision-v1."):
+    if record["schema_version"] != "cognitive-os-capability-decision-v1.5":
         raise ContractError("unsupported capability decision schema_version")
     _safe_text(record["capability"], "capability_decision.capability")
     _enum("discovery_class", record["discovery_class"], DISCOVERY_CLASS)
@@ -389,7 +576,7 @@ def validate_forensic_manifest(record: Mapping[str, Any]) -> Mapping[str, Any]:
         "consent_state",
     }
     _keys(record, required=required, allowed=required, name="forensic_manifest")
-    if not isinstance(record["manifest_id"], str) or not record["manifest_id"].startswith("FDM-"):
+    if not isinstance(record["manifest_id"], str) or not _MANIFEST_ID.fullmatch(record["manifest_id"]):
         raise ContractError("forensic_manifest.manifest_id must be bounded")
     if not isinstance(record["schema_version"], str) or record["schema_version"] != "cognitive-os-forensic-manifest-v1.5":
         raise ContractError("unsupported forensic manifest schema_version")
@@ -400,15 +587,32 @@ def validate_forensic_manifest(record: Mapping[str, Any]) -> Mapping[str, Any]:
     _keys(record["window"], required={"started_at", "ended_at"}, allowed={"started_at", "ended_at"}, name="forensic_manifest.window")
     _timestamp(record["window"]["started_at"], "forensic_manifest.window.started_at")
     _timestamp(record["window"]["ended_at"], "forensic_manifest.window.ended_at")
+    started = _dt.datetime.fromisoformat(record["window"]["started_at"].replace("Z", "+00:00"))
+    ended = _dt.datetime.fromisoformat(record["window"]["ended_at"].replace("Z", "+00:00"))
+    if ended < started:
+        raise ContractError("forensic_manifest.window is reversed")
+    limits = {"allowlisted_sources": 32, "session_ids": 32, "artifacts": 64}
     for field in ("allowlisted_sources", "session_ids", "artifacts"):
         if not isinstance(record[field], list):
             raise ContractError(f"forensic_manifest.{field} must be an array")
+        if len(record[field]) > limits[field]:
+            raise ContractError(f"forensic_manifest.{field} exceeds its bounded item limit")
+        if any(not isinstance(value, str) for value in record[field]):
+            raise ContractError(f"forensic_manifest.{field}[] must be a string")
+        if len(record[field]) != len(set(record[field])):
+            raise ContractError(f"forensic_manifest.{field} must not repeat identifiers")
         for value in record[field]:
             _safe_text(value, f"forensic_manifest.{field}[]")
+            if value.startswith(("/", "\\")) or ".." in value.split("/") or "file://" in value.lower():
+                raise ContractError(f"forensic_manifest.{field}[] must not contain an unscoped path")
     for field in ("raw_conversation_included", "sanitized", "previewed"):
         if not isinstance(record[field], bool):
             raise ContractError(f"forensic_manifest.{field} must be boolean")
     if record["raw_conversation_included"]:
         raise ContractError("raw conversation is excluded from the default forensic manifest")
+    if not record["sanitized"]:
+        raise ContractError("forensic manifest must be sanitized before preview/share")
     _enum("forensic_manifest.consent_state", record["consent_state"], {"NOT_ASKED", "DECLINED", "GRANTED", "REVOKED"})
+    if record["consent_state"] == "GRANTED" and not record["previewed"]:
+        raise ContractError("forensic manifest requires preview before consented sharing")
     return record

@@ -113,6 +113,56 @@ class MachineContractTests(unittest.TestCase):
         with self.assertRaises(ContractError):
             validate_run_record(record)
 
+    def test_run_and_capability_contracts_do_not_accept_historical_schema_versions(self):
+        run_record = {
+            "id": "CRR-20260904-120000-ABCD",
+            "schema_version": "cognitive-os-run-record-v1.4",
+            "created_at": "2026-09-04T12:00:00Z",
+            "host": "hermes",
+            "surface": "cli",
+            "depth": "normal",
+            "flow_coverage": "COMPLETE",
+            "execution_integrity": "COMPLETE",
+            "run_status": "COMPLETE",
+            "decision_state": "TEST_REQUIRED",
+            "provenance": "HOST_OBSERVED",
+            "phase_ledger": [],
+            "conditional_branch_ledger": [],
+            "capability_ledger": [],
+            "method_ledger": [],
+            "evidence_ledger": [],
+            "gap_failure_ledger": [],
+            "challenge_ledger": [],
+            "mutation_ledger": [],
+            "persistent_side_effects": [],
+            "research_budget": {"planned": {}, "consumed": {}, "checkpoints": [], "stop_reason": "bounded"},
+            "provider_host_failures": [],
+            "stop": {"state": "STOP", "reason": "bounded"},
+            "next_proof": None,
+            "telemetry": {"mode": "OFF", "state": "NOT_CONFIGURED"},
+        }
+        with self.assertRaises(ContractError):
+            validate_run_record(run_record)
+
+        capability = {
+            "id": "CAP-20260904-ABCD",
+            "schema_version": "cognitive-os-capability-decision-v1.4",
+            "capability": "web",
+            "discovery_class": "EXISTING_CAPABILITY",
+            "source_or_adapter": "host",
+            "candidate_provenance": {"source": "host", "provenance_class": "HOST_OBSERVED"},
+            "availability": "AVAILABLE",
+            "auth_state": "NOT_REQUIRED",
+            "run_consent_state": "NOT_REQUIRED",
+            "invocation": "NOT_CALLED",
+            "result": "NOT_APPLICABLE",
+            "consent_required": False,
+            "adoption_state": "DISCOVERED",
+            "evidence_refs": [],
+        }
+        with self.assertRaises(ContractError):
+            validate_capability_decision(capability)
+
     def test_capability_decision_rejects_success_without_evidence_ref(self):
         record = {
             "id": "CAP-20260904-ABCD",

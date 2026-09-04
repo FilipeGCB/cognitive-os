@@ -103,11 +103,15 @@
         "source_or_adapter": {"$ref": "#/$defs/boundedText"},
         "candidate_provenance": {"$ref": "#/$defs/provenance"},
         "consent_required": {"type": "boolean"},
-        "consent_state": {"enum": ["NOT_REQUIRED", "NOT_ASKED", "DECLINED", "GRANTED", "REVOKED"]},
+        "consent_state": {"enum": ["NOT_REQUIRED", "NOT_ASKED", "NOT_GRANTED", "DECLINED", "GRANTED", "REVOKED"]},
         "fallback": {"type": "string", "maxLength": 512, "pattern": "^[^\\r\\n\\u0000]*$"},
         "materiality": {"enum": ["MATERIAL", "NON_MATERIAL", "UNKNOWN"]},
         "evidence_refs": {"$ref": "#/$defs/refs"}
-      }
+      },
+      "allOf": [
+        {"if": {"properties": {"invocation": {"const": "CALLED"}}}, "then": {"properties": {"evidence_refs": {"minItems": 1}}}},
+        {"if": {"properties": {"result": {"const": "SUCCESS"}}}, "then": {"properties": {"evidence_refs": {"minItems": 1}}}}
+      ]
     },
     "method": {
       "type": "object", "additionalProperties": false,
@@ -187,10 +191,19 @@
       "type": "object", "additionalProperties": false,
       "required": ["planned", "consumed", "checkpoints", "stop_reason"],
       "properties": {
-        "planned": {"type": "object", "additionalProperties": {"$ref": "#/$defs/counter"}},
-        "consumed": {"type": "object", "additionalProperties": {"$ref": "#/$defs/counter"}},
+        "planned": {"$ref": "#/$defs/budgetCounters"},
+        "consumed": {"$ref": "#/$defs/budgetCounters"},
         "checkpoints": {"type": "array", "items": {"$ref": "#/$defs/checkpoint"}},
         "stop_reason": {"$ref": "#/$defs/boundedText"}
+      }
+    },
+    "budgetCounters": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "web_calls": {"$ref": "#/$defs/counter"},
+        "source_count": {"$ref": "#/$defs/counter"},
+        "elapsed_seconds": {"$ref": "#/$defs/counter"},
+        "context_fraction": {"$ref": "#/$defs/counter"}
       }
     },
     "counter": {

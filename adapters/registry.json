@@ -1,5 +1,39 @@
 {
-  "schema_version": "cognitive-os-adapter-registry-v1",
+  "schema_version": "cognitive-os-adapter-registry-v1.5",
+  "discovery_assets": [
+    {
+      "id": "external-skill-discovery-unproven",
+      "asset_type": "EXTERNAL_SKILL_DISCOVERY",
+      "source": null,
+      "owner": null,
+      "repository": null,
+      "maintainer": null,
+      "version": null,
+      "license": null,
+      "mechanism": null,
+      "hosts": ["hermes", "codex", "chatgpt-work", "generic"],
+      "status": "BLOCKED",
+      "identity_status": "UNPROVEN",
+      "provenance": "Repository, history and issue review found only the abstract Find Skills concept; no exact asset identity was proven.",
+      "requires_consent": false
+    },
+    {
+      "id": "external-mcp-discovery-unproven",
+      "asset_type": "EXTERNAL_MCP_DISCOVERY",
+      "source": null,
+      "owner": null,
+      "repository": null,
+      "maintainer": null,
+      "version": null,
+      "license": null,
+      "mechanism": null,
+      "hosts": ["hermes", "codex", "chatgpt-work", "generic"],
+      "status": "BLOCKED",
+      "identity_status": "UNPROVEN",
+      "provenance": "Repository, history and issue review found only the abstract Find MCP concept; no exact asset identity was proven.",
+      "requires_consent": false
+    }
+  ],
   "adapters": [
     {
       "id": "notebooklm-py",

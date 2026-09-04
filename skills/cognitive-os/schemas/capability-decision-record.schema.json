@@ -41,11 +41,15 @@
     "invocation": {"enum": ["CALLED", "NOT_CALLED"]},
     "result": {"enum": ["SUCCESS", "PARTIAL", "TRUNCATED", "RATE_LIMITED", "UNAVAILABLE", "BLOCKED", "FAILED", "NOT_APPLICABLE"]},
     "consent_required": {"type": "boolean"},
-    "consent_state": {"enum": ["NOT_REQUIRED", "NOT_ASKED", "DECLINED", "GRANTED", "REVOKED"]},
+    "consent_state": {"enum": ["NOT_REQUIRED", "NOT_ASKED", "NOT_GRANTED", "DECLINED", "GRANTED", "REVOKED"]},
     "adoption_state": {"enum": ["DISCOVERED", "INSPECTED", "REJECTED", "TEST_APPROVED", "PERSISTENT_ADOPTION_PENDING_CONSENT", "APPROVED", "QUARANTINED", "UNAVAILABLE", "BLOCKED"]},
     "fallback": {"type": "string", "maxLength": 512, "pattern": "^[^\\r\\n\\u0000]*$"},
     "materiality": {"enum": ["MATERIAL", "NON_MATERIAL", "UNKNOWN"]},
     "evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 2, "maxLength": 512, "pattern": "^[A-Za-z0-9][A-Za-z0-9+._:/#?=&@%~,'()\\-]+$"}, "uniqueItems": true},
     "notes": {"type": "string", "maxLength": 1024, "pattern": "^[^\\r\\n\\u0000]+$"}
-  }
+  },
+  "allOf": [
+    {"if": {"properties": {"invocation": {"const": "CALLED"}}}, "then": {"properties": {"evidence_refs": {"minItems": 1}}}},
+    {"if": {"properties": {"result": {"const": "SUCCESS"}}}, "then": {"properties": {"evidence_refs": {"minItems": 1}}}}
+  ]
 }
