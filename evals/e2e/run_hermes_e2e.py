@@ -893,7 +893,7 @@ def run_notebooklm_case(
     execution, session, events, _ = _run_chat_with_trace(
         profile,
         prompt,
-        ["skills"],
+        ["skills", "notebooklm"],
         set(),
         timeout,
         "cognitive-os-e2e-H14-E04",
