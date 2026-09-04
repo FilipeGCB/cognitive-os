@@ -19,11 +19,12 @@ Lack of host UI or outbound capability leaves sharing `UNAVAILABLE`.
 
 ## Constructed fields
 
-The shared event is constructed only from an allowlist: schema/version, host and
-surface class, non-identifying run ID, depth, audit flag, capability category
-outcomes, research/compaction buckets, failure booleans, persistent-change
-boolean, closed feedback enums, decision state and run status. Custom skills,
-MCPs, connectors, private repositories and client systems are reduced to
+The shared event is constructed only from an allowlist: schema/version, a
+random non-identifying event ID for idempotency, a non-identifying run ID, host
+and surface class, depth, audit flag, capability category outcomes,
+research/compaction buckets, failure booleans, persistent-change boolean,
+closed feedback enums, decision state and run status. Custom skills, MCPs,
+connectors, private repositories and client systems are reduced to
 `custom_capability` or an equivalent category.
 
 The shared client rejects unknown fields, invalid enums and oversized payloads.

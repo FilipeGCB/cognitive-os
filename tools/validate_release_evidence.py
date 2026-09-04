@@ -177,7 +177,12 @@ def validate_release_evidence(
     tests = record["tests"]
     if not isinstance(tests, Mapping):
         raise ReleaseEvidenceError("tests must be an object")
-    _require_keys(tests, {"total", "passed", "failed", "critical_failures", "conformance_schema", "grader_independent"}, {"total", "passed", "failed", "critical_failures", "conformance_schema", "grader_independent"}, "tests")
+    _require_keys(
+        tests,
+        {"total", "passed", "failed", "critical_failures", "conformance_schema", "grader_independent"},
+        {"total", "passed", "failed", "critical_failures", "conformance_schema", "grader_independent", "model_results"},
+        "tests",
+    )
     if not all(isinstance(tests[field], int) and not isinstance(tests[field], bool) and tests[field] >= 0 for field in ("total", "passed", "failed")):
         raise ReleaseEvidenceError("test counts must be non-negative integers")
     if tests["total"] < 1 or tests["passed"] + tests["failed"] != tests["total"]:
