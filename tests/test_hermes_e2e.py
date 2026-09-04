@@ -202,6 +202,10 @@ class HermesE2EHarnessTests(unittest.TestCase):
         source = inspect.getsource(h.run_notebooklm_case)
         self.assertNotIn('"mcp-notebooklm"', source)
 
+    def test_notebooklm_case_requests_configured_mcp_server_by_name(self):
+        source = inspect.getsource(h.run_notebooklm_case)
+        self.assertIn('["skills", "notebooklm"]', source)
+
     def test_notebooklm_grounding_requires_successful_source_read(self):
         metadata_only = [
             {
