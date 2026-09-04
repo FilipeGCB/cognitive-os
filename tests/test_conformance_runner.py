@@ -13,9 +13,9 @@ spec.loader.exec_module(runner)
 
 class ConformanceRunnerTests(unittest.TestCase):
     def test_audit_cases_get_enough_generation_budget_for_observable_ledgers(self):
-        self.assertEqual(runner.response_num_predict_for([]), 600)
-        self.assertGreaterEqual(runner.response_num_predict_for(["audit"]), 1800)
-        self.assertGreaterEqual(runner.response_num_predict_for(["audit-preserved"]), 1800)
+        self.assertGreaterEqual(runner.response_num_predict_for([]), 1000)
+        self.assertGreaterEqual(runner.response_num_predict_for(["audit"]), 2800)
+        self.assertGreaterEqual(runner.response_num_predict_for(["audit-preserved"]), 2800)
 
     def test_grader_contract_does_not_confuse_observable_audit_ledgers_with_chain_of_thought(self):
         prompt = runner.grader_system_prompt(["audit", "no-chain-of-thought"]).lower()

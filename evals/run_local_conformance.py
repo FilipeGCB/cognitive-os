@@ -21,6 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / "skills" / "cognitive-os"
 DEFAULT_URL = "http://127.0.0.1:11434/api/chat"
+DEFAULT_CONTEXT_WINDOW = 16384
 CRITICAL_IDS = {
     "V14-C06", "V14-C10", "V14-C12", "V14-C16", "V14-C18", "V14-C19",
     "V14-O03", "V14-O07", "V14-O10",
@@ -76,7 +77,7 @@ def context_for(tags: list[str]) -> str:
 
 def response_num_predict_for(tags: list[str]) -> int:
     """Give audit responses enough room to materialize observable ledgers."""
-    return 2200 if set(tags) & AUDIT_TAGS else 600
+    return 3200 if set(tags) & AUDIT_TAGS else 1200
 
 
 def grader_system_prompt(tags: list[str]) -> str:
@@ -97,6 +98,7 @@ def ollama_chat(
     json_mode: bool = False,
     timeout: int = 240,
     num_predict: int = 600,
+    context_window: int = DEFAULT_CONTEXT_WINDOW,
     return_metadata: bool = False,
 ) -> str | tuple[str, dict]:
     payload = {
@@ -104,7 +106,7 @@ def ollama_chat(
         "messages": messages,
         "stream": False,
         "think": False,
-        "options": {"temperature": 0, "num_predict": num_predict, "num_ctx": 8192},
+        "options": {"temperature": 0, "num_predict": num_predict, "num_ctx": context_window},
     }
     if json_mode:
         payload["format"] = "json"
@@ -140,26 +142,34 @@ def response_flags(response: str, metadata: dict, *, tags: list[str]) -> dict[st
     }
 
 
-def wait_for_ollama(url: str, model: str, attempts: int = 30) -> None:
+def wait_for_ollama(url: str, model: str, *, context_window: int = DEFAULT_CONTEXT_WINDOW, attempts: int = 30) -> None:
     for _ in range(attempts):
         try:
-            ollama_chat(url, model, [{"role": "user", "content": "Reply only with OK."}], timeout=60)
+            ollama_chat(url, model, [{"role": "user", "content": "Reply only with OK."}], timeout=60, context_window=context_window)
             return
         except Exception:
             time.sleep(2)
     raise RuntimeError("Ollama/model did not become ready")
 
 
-def run_case(url: str, model: str, case: dict, *, grader_model: str | None = None) -> dict:
+def run_case(
+    url: str,
+    model: str,
+    case: dict,
+    *,
+    grader_model: str | None = None,
+    context_window: int = DEFAULT_CONTEXT_WINDOW,
+) -> dict:
     system = (
         "You are an AI agent with the Cognitive OS skill installed. Follow the supplied skill files as operational instructions. "
-        "Answer the user's request naturally. Do not mention this evaluation, its rubric, or internal hidden reasoning.\n\n"
+        "Answer the user's request with concise evidence-oriented bullets, normally under 800 words. Cover every relevant requirement "
+        "without repeating the skill. Do not mention this evaluation, its rubric, or internal hidden reasoning.\n\n"
         + context_for(case["tags"])
     )
     response, response_metadata = ollama_chat(url, model, [
         {"role": "system", "content": system},
         {"role": "user", "content": case["prompt"]},
-    ], num_predict=response_num_predict_for(case["tags"]), return_metadata=True)
+    ], num_predict=response_num_predict_for(case["tags"]), context_window=context_window, return_metadata=True)
     flags = response_flags(response, response_metadata, tags=case["tags"])
 
     rubric = {"id": case["id"], "must": case["must"], "must_not": case["must_not"]}
@@ -177,7 +187,7 @@ ASSISTANT RESPONSE:
     raw_grade, grade_metadata = ollama_chat(url, actual_grader, [
         {"role": "system", "content": grader_system_prompt(case["tags"])},
         {"role": "user", "content": grader_prompt},
-    ], json_mode=True, return_metadata=True)
+    ], json_mode=True, context_window=context_window, return_metadata=True)
     try:
         grade = json.loads(raw_grade)
     except json.JSONDecodeError:
@@ -233,20 +243,23 @@ def main() -> int:
     parser.add_argument("--url", default=os.environ.get("OLLAMA_CHAT_URL", DEFAULT_URL))
     parser.add_argument("--out", default="evals/runs/v1.4-local-conformance.json")
     parser.add_argument("--suite", choices=("v1.4", "v1.5"), default="v1.4")
+    parser.add_argument("--context-window", type=int, default=int(os.environ.get("COGNITIVE_OS_CONTEXT_WINDOW", DEFAULT_CONTEXT_WINDOW)))
     args = parser.parse_args()
+    if args.context_window < 4096:
+        parser.error("--context-window must be at least 4096")
 
     suite_files = {
         "v1.4": [ROOT / "evals" / "v1.4-core-cases.json", ROOT / "evals" / "v1.4-output-cases.json"],
         "v1.5": [ROOT / "evals" / "v1.5-cases.json", ROOT / "evals" / "v1.5-output-cases.json"],
     }
     cases = load_cases(suite_files[args.suite])
-    wait_for_ollama(args.url, args.model)
+    wait_for_ollama(args.url, args.model, context_window=args.context_window)
 
     results = []
     for case in cases:
         print(f"RUN {case['id']}", flush=True)
         try:
-            results.append(run_case(args.url, args.model, case, grader_model=args.grader_model))
+            results.append(run_case(args.url, args.model, case, grader_model=args.grader_model, context_window=args.context_window))
         except (urllib.error.URLError, TimeoutError, RuntimeError, KeyError, json.JSONDecodeError, TypeError, ValueError) as exc:
             results.append({
                 "id": case["id"], "tags": case["tags"], "prompt": case["prompt"], "response": "",
@@ -272,7 +285,7 @@ def main() -> int:
         "grader_is_separate_invocation": True,
         "grader_independent": bool(args.grader_model and args.grader_model != args.model),
         "thinking_disabled": True,
-        "context_window": 8192,
+        "context_window": args.context_window,
         "cases": len(results),
         "pass_count": passed,
         "required_pass_count": threshold,
