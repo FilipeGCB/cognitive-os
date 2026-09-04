@@ -14,7 +14,7 @@ class HermesE2EHarnessTests(unittest.TestCase):
     def test_manifest_has_six_stable_cases(self):
         cases = json.loads((ROOT / "evals" / "e2e" / "hermes-cases.json").read_text())
         self.assertEqual([c["id"] for c in cases], [f"H14-E0{i}" for i in range(1, 7)])
-        self.assertEqual(len({c["id"] for c in cases}), 6)
+        self.assertEqual(len({c["id"] for c in cases]), 6)
         nb = next(c for c in cases if c["id"] == "H14-E04")
         self.assertTrue(nb["requires_account_approval"])
 
@@ -197,6 +197,10 @@ class HermesE2EHarnessTests(unittest.TestCase):
     def test_notebooklm_case_never_invokes_mcp_add(self):
         source = inspect.getsource(h.run_notebooklm_case)
         self.assertNotIn('["hermes", "-p", profile, "mcp", "add"', source)
+
+    def test_notebooklm_case_does_not_request_dynamic_mcp_toolset(self):
+        source = inspect.getsource(h.run_notebooklm_case)
+        self.assertNotIn('"mcp-notebooklm"', source)
 
     def test_notebooklm_grounding_requires_successful_source_read(self):
         metadata_only = [
