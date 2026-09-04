@@ -2,11 +2,13 @@
 
 > **Think before you spec. Decide before you execute.**
 
+[Português (Brasil)](README.pt-BR.md)
+
 Cognitive OS is a portable Agent Skill for maturing decisions before consequential action. It reconstructs context, separates evidence from assumptions, chooses proportional research and reasoning methods, challenges the leading conclusion, identifies the next useful proof, and knows when further analysis is no longer worth its cost.
 
 It is deliberately **not** a software delivery lifecycle or an autonomous executor. A decision may hand off to a human, a coding workflow, a research process, another agent—or to no action at all.
 
-> **Current status:** `v1.4.0` promotion candidate. Behavioral conformance and live host/capability E2E have passed. The stable GitHub tag/release is still gated on final feature-branch CI, explicit merge approval, and downstream green `main` CI.
+> **Current stable release:** [`v1.4.0`](https://github.com/FilipeGCB/cognitive-os/releases/tag/v1.4.0). Behavioral conformance, live host/capability E2E, promotion CI, downstream `main` CI, and the stable release workflow all passed before publication.
 
 ## Install
 
@@ -179,10 +181,10 @@ A capability that is installed or documented has **not** necessarily executed. S
 
 The private predecessor V1.3 established the behavioral and auditability baseline from which this public product was derived. Those historical results do **not** automatically prove V1.4.
 
-The public V1.4 case manifests live under [`evals/`](evals/). The release candidate passed the declared 29-case behavioral/output suite with the local Gemma SUT and an independent Qwen cross-grader, with zero critical failures and zero grader disagreements. Live Hermes capability E2E also passed 6/6 on one candidate SHA. See [`docs/releases/v1.4.0-release-evidence.md`](docs/releases/v1.4.0-release-evidence.md) for the evidence boundary and remaining promotion steps.
+The public V1.4 case manifests live under [`evals/`](evals/). The released `v1.4.0` candidate passed the declared 29-case behavioral/output suite with the local Gemma SUT and an independent Qwen cross-grader, with zero critical failures and zero grader disagreements. Live Hermes capability E2E also passed 6/6 on one candidate SHA. Promotion CI, downstream `main` CI, and the stable release workflow subsequently passed before the `v1.4.0` tag and GitHub Release were created. See [`docs/releases/v1.4.0-release-evidence.md`](docs/releases/v1.4.0-release-evidence.md) for the evidence boundary.
 
 ## License
 
 Cognitive OS is licensed under the **Apache License 2.0**. See [`LICENSE`](LICENSE).
 
-The immutable stable tag/release is created only after the explicit release gate is satisfied on the promotion branch, the PR is approved and merged, and downstream `main` CI is green.
+Stable `v1.4.0` was published only after the explicit release gate was satisfied, the promotion PR was merged with user approval, downstream `main` CI passed, and the release workflow verified the exact target commit.
