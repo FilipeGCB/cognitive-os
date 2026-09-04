@@ -1,0 +1,26 @@
+{
+  "name": "cognitive-os",
+  "owner": {
+    "name": "FilipeGCB"
+  },
+  "description": "Cognitive OS public Agent Skill marketplace",
+  "plugins": [
+    {
+      "name": "cognitive-os",
+      "source": "./",
+      "description": "Portable decision layer for maturing decisions before consequential action.",
+      "strict": false,
+      "skills": [
+        "./skills/cognitive-os"
+      ],
+      "repository": "https://github.com/FilipeGCB/cognitive-os",
+      "keywords": [
+        "decision-making",
+        "agent-skills",
+        "research",
+        "sensemaking",
+        "auditability"
+      ]
+    }
+  ]
+}

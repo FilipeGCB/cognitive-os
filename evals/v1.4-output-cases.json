@@ -1,0 +1,72 @@
+[
+  {
+    "id": "V14-O01",
+    "prompt": "Give me the final recommendation for this material decision: choose Vendor A or Vendor B. Vendor A is 15% cheaper but requires a 12-month lock-in and has a costly exit. Vendor B costs 15% more but is month-to-month and easier to reverse. Demand uncertainty is high and reversibility matters. Recommend one and explain why.",
+    "tags": ["conclusion-first"],
+    "must": ["Put the decision or recommendation in the first meaningful block."],
+    "must_not": ["Begin with a long process recap before the conclusion."]
+  },
+  {
+    "id": "V14-O02",
+    "prompt": "I started wanting a custom GPT. The analysis changed the product architecture because I need host neutrality, portable versioning, and the ability to use the same cognitive behavior across ChatGPT, Claude, Gemini and local agents. The matured decision is to ship a portable Agent Skill as the core instead of making a custom GPT the product. Explain the final decision and make the before-versus-after delta clear.",
+    "tags": ["idea-evolution"],
+    "must": ["Make the initial idea and matured decision delta visible and explain why it changed."],
+    "must_not": ["Present the final state as if the original idea never existed."]
+  },
+  {
+    "id": "V14-O03",
+    "prompt": "I need to decide whether to run a two-week pilot before a full rollout. Evidence: eight customer interviews support the problem, the pilot is low-cost and reversible, but we still have no retention data. Answer normally; I did not ask for audit mode.",
+    "tags": ["no-framework-dump"],
+    "must": ["Report discoveries and decision-relevant evidence in natural language."],
+    "must_not": ["Dump phase numbers, lens names, Gauntlet status or raw capability enums merely to demonstrate rigor."]
+  },
+  {
+    "id": "V14-O04",
+    "prompt": "What does reversibility mean in this decision?",
+    "tags": ["simple-stays-simple"],
+    "must": ["Explain the concept directly and proportionally."],
+    "must_not": ["Force a full Decision Brief template or unrelated sections."]
+  },
+  {
+    "id": "V14-O05",
+    "prompt": "Run Full Flow/Audit and give me the human recommendation plus audit evidence for this decision: a 30-day pilot of Vendor B met the agreed operational and adoption criteria, while the only material unresolved item is the scheduled security review. A full irreversible rollout should not happen until that review clears. Give the recommendation first, then preserve the structured audit information required by Full Flow/Audit.",
+    "tags": ["audit-preserved"],
+    "must": ["Lead with a comprehensible recommendation while preserving the structured audit information required by the mode."],
+    "must_not": ["Replace the human answer with only a ledger."]
+  },
+  {
+    "id": "V14-O06",
+    "prompt": "Write a Decision Brief in Markdown for this decision: run a 30-day pilot of Vendor B before wider rollout. Decisive reasons: it is reversible, deploys within one week, and satisfies current requirements. Material unknown: security review is still pending. Next move: complete the review during the pilot and stop rollout if a critical issue appears.",
+    "tags": ["readable-markdown"],
+    "must": ["Use informative headings, meaningful whitespace and compact paragraphs."],
+    "must_not": ["Produce an undifferentiated wall of bullets or decorative cards."]
+  },
+  {
+    "id": "V14-O07",
+    "prompt": "Give me your confidence in this recommendation.",
+    "tags": ["no-pseudo-confidence"],
+    "must": ["Express evidence strength, material unknowns or decision state in grounded language."],
+    "must_not": ["Invent a precise confidence percentage without calibration evidence."]
+  },
+  {
+    "id": "V14-O08",
+    "prompt": "Compare these three real alternatives and make the trade-offs easy to scan. Alternative A: lowest cost, 3-year lock-in, weak customization. Alternative B: medium cost, 1-year contract, strong customization. Alternative C: highest cost, month-to-month, moderate customization and easiest exit. Reversibility and total cost both matter.",
+    "tags": ["selective-table"],
+    "must": ["Use a compact table when it makes the comparison materially easier to scan."],
+    "must_not": ["Use a table for decorative metadata unrelated to the trade-off."]
+  },
+  {
+    "id": "V14-O09",
+    "prompt": "A 5 Whys analysis produced this causal chain: renewals are low because customers do not reach first value; they do not reach first value because onboarding stalls; onboarding stalls because no owner follows up after implementation; no owner follows up because the handoff between sales and customer success is undefined; the handoff is undefined because ownership was never assigned in the operating model. Explain the key causal insight and show the chain because its structure matters.",
+    "tags": ["method-visible-when-useful"],
+    "must": ["Show the causal chain if its structure is the insight."],
+    "must_not": ["Hide a useful causal structure merely because methods are normally internal."]
+  },
+  {
+    "id": "V14-O10",
+    "prompt": "The research tool failed and a material unknown remains. Give the final answer.",
+    "tags": ["material-uncertainty"],
+    "must": ["Keep the missing evidence and its impact visible and provide the next justified move."],
+    "must_not": ["Write a polished definitive conclusion that silently erases the failure."]
+  }
+]

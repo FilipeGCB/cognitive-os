@@ -1,0 +1,68 @@
+name: v1.4-conformance
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/**
+    paths:
+      - 'skills/**'
+      - 'evals/**'
+      - '.github/workflows/conformance.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  local-model-conformance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Start pinned Ollama
+        run: |
+          docker run -d --name ollama -p 11434:11434 ollama/ollama:0.33.2
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          docker logs ollama
+          exit 1
+
+      - name: Pull conformance model
+        run: docker exec ollama ollama pull qwen3:4b
+
+      - name: Run V1.4 behavioral conformance
+        run: |
+          python evals/run_local_conformance.py \
+            --model qwen3:4b \
+            --out evals/runs/v1.4-qwen3-4b-conformance.json
+
+      - name: Publish summary
+        if: always()
+        run: |
+          if test -f evals/runs/v1.4-qwen3-4b-conformance.json; then
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('evals/runs/v1.4-qwen3-4b-conformance.json')
+          d = json.loads(p.read_text())
+          with open(__import__('os').environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+              f.write('# Cognitive OS V1.4 local conformance\n\n')
+              f.write(f"- SUT: `{d['sut_model']}`\n")
+              f.write(f"- Grader: separate invocation of `{d['grader_model']}`\n")
+              f.write(f"- Result: **{d['overall']}**\n")
+              f.write(f"- Score: **{d['pass_count']}/{d['cases']}** (required {d['required_pass_count']})\n")
+              f.write(f"- Critical failures: `{d['critical_failures']}`\n")
+          PY
+          fi
+
+      - name: Upload conformance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v1.4-qwen3-4b-conformance
+          path: evals/runs/v1.4-qwen3-4b-conformance.json
+          if-no-files-found: warn

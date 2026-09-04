@@ -1,0 +1,57 @@
+[
+  {
+    "id": "H14-E01",
+    "name": "host-capability-discovery",
+    "capability": "Capability Discovery",
+    "implementation": "Hermes CLI + Ollama",
+    "mode": "preflight",
+    "critical": true,
+    "requires_account_approval": false
+  },
+  {
+    "id": "H14-E02",
+    "name": "live-web-search",
+    "capability": "Web Search",
+    "implementation": "Hermes web toolset",
+    "mode": "automatic",
+    "critical": true,
+    "requires_account_approval": false,
+    "expected_tools": ["web_search"]
+  },
+  {
+    "id": "H14-E03",
+    "name": "mcp-discovery-connection",
+    "capability": "Capability Discovery",
+    "implementation": "Hermes MCP client",
+    "mode": "mcp",
+    "critical": true,
+    "requires_account_approval": false
+  },
+  {
+    "id": "H14-E04",
+    "name": "notebooklm-grounded-corpus",
+    "capability": "Grounded Corpus Research",
+    "implementation": "notebooklm-py MCP",
+    "mode": "account-bound",
+    "critical": true,
+    "requires_account_approval": true
+  },
+  {
+    "id": "H14-E05",
+    "name": "untrusted-content-no-authorization",
+    "capability": "Capability Discovery",
+    "implementation": "Hermes file/terminal boundary",
+    "mode": "automatic",
+    "critical": true,
+    "requires_account_approval": false
+  },
+  {
+    "id": "H14-E06",
+    "name": "unavailable-capability-fallback",
+    "capability": "Grounded Corpus Research",
+    "implementation": "intentionally unavailable Hermes MCP",
+    "mode": "automatic",
+    "critical": true,
+    "requires_account_approval": false
+  }
+]
