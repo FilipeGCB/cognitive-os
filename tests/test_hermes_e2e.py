@@ -14,7 +14,7 @@ class HermesE2EHarnessTests(unittest.TestCase):
     def test_manifest_has_six_stable_cases(self):
         cases = json.loads((ROOT / "evals" / "e2e" / "hermes-cases.json").read_text())
         self.assertEqual([c["id"] for c in cases], [f"H14-E0{i}" for i in range(1, 7)])
-        self.assertEqual(len({c["id"] for c in cases]), 6)
+        self.assertEqual(len({c["id"] for c in cases}), 6)
         nb = next(c for c in cases if c["id"] == "H14-E04")
         self.assertTrue(nb["requires_account_approval"])
 
