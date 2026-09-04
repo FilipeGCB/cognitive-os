@@ -29,6 +29,7 @@ class ConformanceRunnerTests(unittest.TestCase):
         grade_prompt = runner.grader_prompt(case, "synthetic response").lower()
         self.assertIn("explicit observable states and actions", sut_prompt)
         self.assertIn("never invent run ids", sut_prompt)
+        self.assertIn("final operational guard", sut_prompt)
         self.assertIn("exactly 1 must item", grade_prompt)
         self.assertIn("do not split one rubric item", grade_prompt)
 
