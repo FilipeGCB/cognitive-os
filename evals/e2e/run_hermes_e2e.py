@@ -31,6 +31,7 @@ DEFAULT_TIMEOUT = 240
 SCHEMA = "cognitive-os-hermes-e2e-v1.4"
 CASE_IDS = tuple(f"H14-E0{i}" for i in range(1, 7))
 SKILL_TOOLS = {"skill_view", "skills_list", "skill_manage", "skills"}
+ACCOUNT_BOUND_MCP_SERVERS = {"notebooklm"}
 
 _RESULT_TO_STATE = {
     "SUCCESS": "EXECUTED",
@@ -750,11 +751,15 @@ def run_unavailable_case(profile: str, timeout: int, out_dir: Path) -> dict[str,
     return record
 
 
-def run_mcp_case(profile: str, timeout: int, out_dir: Path, server: str | None) -> dict[str, Any]:
+def run_mcp_case(
+    profile: str,
+    timeout: int,
+    out_dir: Path,
+    server: str | None,
+    account_use_approved: bool = False,
+) -> dict[str, Any]:
     listing = run_command(["hermes", "-p", profile, "mcp", "list"], timeout=min(timeout, 60))
     selected = server
-    if not selected and "notebooklm" in listing["stdout"].lower():
-        selected = "notebooklm"
     if not selected:
         record = _record(
             "H14-E03",
@@ -767,6 +772,23 @@ def run_mcp_case(profile: str, timeout: int, out_dir: Path, server: str | None) 
             profile,
             evidence_refs=["hermes mcp list"],
             notes="No MCP server selected/configured for a connection test.",
+            command_evidence=[_min_command_result(listing)],
+        )
+        _write_json(out_dir / "H14-E03.json", record)
+        return record
+
+    if selected.lower() in ACCOUNT_BOUND_MCP_SERVERS and not account_use_approved:
+        record = _record(
+            "H14-E03",
+            "Capability Discovery",
+            f"Hermes MCP client:{selected}",
+            "UNKNOWN",
+            "NOT_CALLED",
+            None,
+            False,
+            profile,
+            evidence_refs=["hermes mcp list", "explicit account-use checkpoint"],
+            notes="Account-bound MCP execution is isolated to notebooklm-check and requires explicit approval.",
             command_evidence=[_min_command_result(listing)],
         )
         _write_json(out_dir / "H14-E03.json", record)
@@ -1033,7 +1055,7 @@ def main(argv: list[str] | None = None) -> int:
             run_unavailable_case(args.profile, args.timeout, out_dir),
         ]
         print(json.dumps({record["id"]: record["pass"] for record in records}, indent=2))
-        return 0 if all(record["pass"] for record in records if record["id"] != "H14-E03") else 1
+        return 0 if all(record["pass"] for record in records) else 1
 
     if args.command == "notebooklm-check":
         record = run_notebooklm_case(

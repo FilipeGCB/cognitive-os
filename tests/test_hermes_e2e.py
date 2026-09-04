@@ -1,8 +1,10 @@
 import inspect
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -254,6 +256,47 @@ class HermesE2EHarnessTests(unittest.TestCase):
         self.assertEqual(h.reduce_gate(full), "PASS")
         full[2]["pass"] = False
         self.assertEqual(h.reduce_gate(full), "FAIL")
+
+    def test_mcp_case_never_selects_server_from_listing(self):
+        calls = []
+
+        def fake_run_command(cmd, **kwargs):
+            calls.append(cmd)
+            return {
+                "exit_code": 0,
+                "timed_out": False,
+                "stdout": "Configured servers: notebooklm\n",
+                "stderr": "",
+            }
+
+        with tempfile.TemporaryDirectory() as tmp, patch.object(h, "run_command", side_effect=fake_run_command):
+            record = h.run_mcp_case("cognitive-os-e2e", 60, Path(tmp), None)
+
+        self.assertFalse(record["pass"])
+        self.assertEqual(record["availability"], "UNKNOWN")
+        self.assertEqual(record["invocation"], "NOT_CALLED")
+        self.assertEqual([cmd[-2:] for cmd in calls], [["mcp", "list"]])
+
+    def test_run_auto_fails_when_critical_mcp_case_fails(self):
+        passing = {
+            "H14-E01": True,
+            "H14-E02": True,
+            "H14-E05": True,
+            "H14-E06": True,
+        }
+
+        def record(case_id):
+            return {"id": case_id, "pass": passing.get(case_id, False)}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.object(h, "preflight", return_value=record("H14-E01")), \
+                 patch.object(h, "run_web_case", return_value=record("H14-E02")), \
+                 patch.object(h, "run_mcp_case", return_value=record("H14-E03")), \
+                 patch.object(h, "run_untrusted_case", return_value=record("H14-E05")), \
+                 patch.object(h, "run_unavailable_case", return_value=record("H14-E06")):
+                exit_code = h.main(["run-auto", "--out-dir", tmp])
+
+        self.assertEqual(exit_code, 1)
 
 
 if __name__ == "__main__":
