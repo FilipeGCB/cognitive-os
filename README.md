@@ -6,7 +6,7 @@ Cognitive OS is a portable Agent Skill for maturing decisions before consequenti
 
 It is deliberately **not** a software delivery lifecycle or an autonomous executor. A decision may hand off to a human, a coding workflow, a research process, another agent—or to no action at all.
 
-> **Current status:** `v1.4.0-dev`. This public development branch is not yet a stable release. Fresh behavioral conformance, host installation tests, companion preflights and a stronger secret/PII scan remain release gates.
+> **Current status:** `v1.4.0` promotion candidate. Behavioral conformance and live host/capability E2E have passed. The stable GitHub tag/release is still gated on final feature-branch CI, explicit merge approval, and downstream green `main` CI.
 
 ## Install
 
@@ -101,11 +101,11 @@ The current host maps those needs to tools it actually has. A native capability 
 
 NotebookLM is a first-class **implementation** of Grounded Corpus Research, not a dependency of Cognitive OS.
 
-The evaluated community adapter is [`notebooklm-py`](adapters/notebooklm/), which provides a CLI/MCP path to NotebookLM. Because it requires Google/NotebookLM authentication and stores authentication material locally, Cognitive OS **always asks for specific consent** before installing or connecting it. It is currently a candidate pending public host-matrix preflight; it is not silently installed or described as an official Google API.
+The evaluated community adapter is [`notebooklm-py`](adapters/notebooklm/), which provides a CLI/MCP path to NotebookLM. Because it requires Google/NotebookLM authentication and stores authentication material locally, Cognitive OS **always asks for specific consent** before installing or connecting it. A bounded read-only Hermes E2E has been observed with successful `source_read`, but NotebookLM remains an optional account-bound candidate implementation rather than a bundled/default dependency or an official Google API.
 
 ### Open-source corpus companions
 
-Cognitive OS is also evaluating local alternatives such as OpenNotebookLM, Open Notebook, SurfSense and AnythingLLM. None is currently installed by default. Repository review selected **OpenNotebookLM as the preferred next integration test**, but a default will not be promoted until direct retrieval/citation and installation tests pass. See [`docs/capabilities/grounded-corpus-gauntlet.md`](docs/capabilities/grounded-corpus-gauntlet.md).
+Cognitive OS is also evaluating local alternatives such as OpenNotebookLM, Open Notebook, SurfSense and AnythingLLM. None is currently installed by default. Repository review selected OpenNotebookLM as a future direct integration candidate, but no default will be promoted until direct retrieval/citation and installation tests pass. See [`docs/capabilities/grounded-corpus-gauntlet.md`](docs/capabilities/grounded-corpus-gauntlet.md).
 
 ## Zero-config where possible
 
@@ -179,10 +179,10 @@ A capability that is installed or documented has **not** necessarily executed. S
 
 The private predecessor V1.3 established the behavioral and auditability baseline from which this public product was derived. Those historical results do **not** automatically prove V1.4.
 
-The public V1.4 case manifests live under [`evals/`](evals/). Stable `v1.4.0` requires fresh conformance against the new behavior and output contracts.
+The public V1.4 case manifests live under [`evals/`](evals/). The release candidate passed the declared 29-case behavioral/output suite with the local Gemma SUT and an independent Qwen cross-grader, with zero critical failures and zero grader disagreements. Live Hermes capability E2E also passed 6/6 on one candidate SHA. See [`docs/releases/v1.4.0-release-evidence.md`](docs/releases/v1.4.0-release-evidence.md) for the evidence boundary and remaining promotion steps.
 
 ## License
 
 Cognitive OS is licensed under the **Apache License 2.0**. See [`LICENSE`](LICENSE).
 
-Do not treat `1.4.0-dev` as a stable release until the release checklist is complete.
+The immutable stable tag/release is created only after the explicit release gate is satisfied on the promotion branch, the PR is approved and merged, and downstream `main` CI is green.
