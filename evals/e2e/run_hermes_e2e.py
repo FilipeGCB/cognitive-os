@@ -1103,6 +1103,7 @@ def _add_common(parser: argparse.ArgumentParser) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    global _ACTIVE_RUN_CONTEXT
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -1151,7 +1152,6 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if record["pass"] else 1
 
     if args.command == "run-auto":
-        global _ACTIVE_RUN_CONTEXT
         _ACTIVE_RUN_CONTEXT = new_run_context()
         try:
             records = [
@@ -1167,14 +1167,18 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if all(record["pass"] for record in records) else 1
 
     if args.command == "notebooklm-check":
-        record = run_notebooklm_case(
-            args.profile,
-            args.timeout,
-            out_dir,
-            args.approve_notebooklm_account_use,
-            args.notebook_title,
-            args.query,
-        )
+        _ACTIVE_RUN_CONTEXT = new_run_context()
+        try:
+            record = run_notebooklm_case(
+                args.profile,
+                args.timeout,
+                out_dir,
+                args.approve_notebooklm_account_use,
+                args.notebook_title,
+                args.query,
+            )
+        finally:
+            _ACTIVE_RUN_CONTEXT = None
         print(json.dumps(record, indent=2))
         if not args.approve_notebooklm_account_use:
             print(
