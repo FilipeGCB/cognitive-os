@@ -1,6 +1,6 @@
 ---
 id: CRR-YYYYMMDD-HHMMSS-XXXX
-schema_version: cognitive-os-run-record-v1.4
+schema_version: cognitive-os-run-record-v1.5
 created_at: YYYY-MM-DDTHH:MM:SSZ
 mode: normal | full-flow-audit
 host: <host>
@@ -8,6 +8,7 @@ surface: <surface>
 project: <string>
 depth: fast | normal | deep | board360
 sensitivity: internal
+provenance: HOST_OBSERVED | TOOL_OBSERVED
 ---
 
 # Cognitive Run Record
@@ -48,17 +49,17 @@ Coverage means relevant phases/branches were accounted for, not that every tool 
 
 ### EXECUTION_INTEGRITY
 
-`COMPLETE | PARTIAL | BLOCKED`
+`COMPLETE | PARTIAL | FAILED | BLOCKED`
 
 ### RUN_STATUS
 
-`COMPLETE | PARTIAL | BLOCKED`
+`COMPLETE | PARTIAL | FAILED | BLOCKED`
 
-`RUN_STATUS=COMPLETE` only when both coverage and execution integrity are complete.
+`RUN_STATUS` describes whether the run closed operationally. It may be `COMPLETE` with `EXECUTION_INTEGRITY=PARTIAL` when useful work was persisted and the remaining failure/gap is explicit; it must not erase that gap.
 
 ### DECISION_STATE
 
-`READY | RECOMMENDATION_ONLY | TEST_REQUIRED | MORE_RESEARCH_REQUIRED | BLOCKED`
+`READY_TO_DECIDE | DECIDED | READY | RECOMMENDATION_ONLY | TEST_REQUIRED | MORE_EVIDENCE_REQUIRED | MORE_RESEARCH_REQUIRED | NO_ACTION_RECOMMENDED | BLOCKED`
 
 A complete process does not create empirical validation. `RUN_STATUS=COMPLETE` with `DECISION_STATE=TEST_REQUIRED` is valid.
 
@@ -102,15 +103,21 @@ Status: `COMPLETE | NOT_APPLICABLE | PARTIAL | BLOCKED`.
 Availability:
 `AVAILABLE | UNAVAILABLE | UNKNOWN`
 
+Auth state:
+`NOT_REQUIRED | REQUIRED_NOT_AUTHENTICATED | AUTHENTICATED | UNKNOWN`
+
+Run consent state:
+`NOT_REQUIRED | NOT_ASKED | NOT_GRANTED | DECLINED | GRANTED | REVOKED`
+
 Invocation:
 `CALLED | NOT_CALLED`
 
 Result:
 `SUCCESS | PARTIAL | TRUNCATED | RATE_LIMITED | UNAVAILABLE | BLOCKED | FAILED | NOT_APPLICABLE`
 
-| Abstract capability | Concrete implementation | Runtime availability | Invocation | Result | Observable evidence | Failure/gap | Fallback | Decision impact |
-|---|---|---|---|---|---|---|---|---|
-|  |  |  |  |  |  |  |  |  |
+| Abstract capability | Category/need | Discovery class | Concrete implementation | Availability | Auth | Run consent | Invocation | Result | Candidate provenance | Evidence | Failure/gap | Fallback | Decision impact |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+|  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 
 Rules:
 
@@ -118,6 +125,8 @@ Rules:
 - only `CALLED + SUCCESS` supports an unqualified `EXECUTED` claim;
 - partial/truncated/rate-limited/failed/blocked calls do not become complete execution;
 - documentation and model knowledge are not invocation evidence.
+- `AVAILABLE + AUTHENTICATED` never implies `GRANTED` for the current run.
+- A successful result requires runtime-observed availability, invocation, required authentication, applicable run consent and at least one evidence reference.
 
 ## Method Ledger
 
@@ -126,6 +135,30 @@ Record selection and observable result, not private reasoning.
 | Workflow/lens/method | Used? | Functional reason selected/discarded | Observable result |
 |---|---:|---|---|
 |  |  |  |  |
+
+## Mutation Ledger
+
+For each persistent or active-run methodology mutation, use the machine fields in `cognitive-run-record.schema.json`:
+
+`mutation_id`, `type`, `target`, `before_version_or_hash`, `after_version_or_hash`, `trigger`, `applied_at`, `applied_during_active_run`, `validation`, `affected_phases`, `rollback_available`, `status`.
+
+Allowed types include `SKILL_MUTATED`, `REFERENCE_MUTATED`, `POLICY_MUTATED`, `CONFIG_CHANGED`, `PACKAGE_INSTALLED`, `MCP_INSTALLED`, `CONNECTION_CREATED`, `FILE_CREATED`, `FILE_MODIFIED`, `CREDENTIAL_STATE_CHANGED` and `OTHER_PERSISTENT_SIDE_EFFECT`.
+
+## Persistent Side Effects Ledger
+
+Record material changes separately from installation claims. `nothing installed` does not mean `nothing changed`.
+
+| Type | Observed? | Target class | Evidence refs |
+|---|---:|---|---|
+|  |  |  |  |
+
+## Research Budget Summary
+
+Record planned/consumed observable counters, soft and hard limits, checkpoint decisions, stop reason and whether context usage was actually observable. `null` is valid for an unavailable counter; it must not be invented.
+
+## Provider / Host Failure Summary
+
+Record unsupported parameters, rate limits, timeouts, truncation and provider/tool failures with the fallback used and whether a minimal closure was emitted.
 
 ## Evidence Ledger
 

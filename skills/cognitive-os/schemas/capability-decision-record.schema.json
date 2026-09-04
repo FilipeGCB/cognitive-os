@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cognitive-os.dev/schemas/capability-decision-record-v1.5.json",
+  "title": "Cognitive OS V1.5 Capability Decision Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id", "schema_version", "capability", "discovery_class", "source_or_adapter",
+    "candidate_provenance", "availability", "auth_state", "run_consent_state",
+    "invocation", "result", "consent_required", "adoption_state", "evidence_refs"
+  ],
+  "properties": {
+    "id": {"type": "string", "pattern": "^CAP-[0-9]{8}-[A-Za-z0-9]{4,16}$"},
+    "schema_version": {"const": "cognitive-os-capability-decision-v1.5"},
+    "capability": {"type": "string", "minLength": 1, "maxLength": 256, "pattern": "^[^\\r\\n\\u0000]+$"},
+    "category": {"type": "string", "maxLength": 128, "pattern": "^[^\\r\\n\\u0000]*$"},
+    "need": {"type": "string", "maxLength": 512, "pattern": "^[^\\r\\n\\u0000]*$"},
+    "discovery_class": {"enum": ["EXISTING_CAPABILITY", "LOCAL_SKILL_DISCOVERY", "LOCAL_TOOL_DISCOVERY", "LOCAL_CONNECTOR_DISCOVERY", "EXTERNAL_SKILL_DISCOVERY", "EXTERNAL_MCP_DISCOVERY", "MANUAL_FALLBACK"]},
+    "source_or_adapter": {"type": "string", "minLength": 1, "maxLength": 256, "pattern": "^[^\\r\\n\\u0000]+$"},
+    "candidate_id": {"type": "string", "maxLength": 128, "pattern": "^[^\\r\\n\\u0000]*$"},
+    "candidate_source": {"type": "string", "maxLength": 512, "pattern": "^[^\\r\\n\\u0000]*$"},
+    "candidate_version": {"type": ["string", "null"], "maxLength": 128, "pattern": "^[^\\r\\n\\u0000]*$"},
+    "license": {"type": ["string", "null"], "maxLength": 256, "pattern": "^[^\\r\\n\\u0000]*$"},
+    "permissions": {"type": "object", "additionalProperties": {"type": ["string", "boolean", "null"]}},
+    "candidate_provenance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source", "provenance_class"],
+      "properties": {
+        "source": {"type": "string", "minLength": 1, "maxLength": 512, "pattern": "^[^\\r\\n\\u0000]+$"},
+        "repository": {"type": "string", "maxLength": 256, "pattern": "^[^\\r\\n\\u0000]*$"},
+        "version": {"type": ["string", "null"], "maxLength": 128, "pattern": "^[^\\r\\n\\u0000]*$"},
+        "license": {"type": ["string", "null"], "maxLength": 256, "pattern": "^[^\\r\\n\\u0000]*$"},
+        "mechanism": {"type": "string", "maxLength": 256, "pattern": "^[^\\r\\n\\u0000]*$"},
+        "provenance_class": {"enum": ["HOST_OBSERVED", "TOOL_OBSERVED", "REPOSITORY_OBSERVED", "USER_SUPPLIED", "MODEL_SYNTHESIZED", "UNKNOWN"]},
+        "observed_at": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[^\\r\\n]+(?:Z|[+-][0-9]{2}:[0-9]{2})$"}
+      }
+    },
+    "availability": {"enum": ["AVAILABLE", "UNAVAILABLE", "UNKNOWN"]},
+    "auth_state": {"enum": ["NOT_REQUIRED", "REQUIRED_NOT_AUTHENTICATED", "AUTHENTICATED", "UNKNOWN"]},
+    "run_consent_state": {"enum": ["NOT_REQUIRED", "NOT_ASKED", "NOT_GRANTED", "DECLINED", "GRANTED", "REVOKED"]},
+    "invocation": {"enum": ["CALLED", "NOT_CALLED"]},
+    "result": {"enum": ["SUCCESS", "PARTIAL", "TRUNCATED", "RATE_LIMITED", "UNAVAILABLE", "BLOCKED", "FAILED", "NOT_APPLICABLE"]},
+    "consent_required": {"type": "boolean"},
+    "consent_state": {"enum": ["NOT_REQUIRED", "NOT_ASKED", "DECLINED", "GRANTED", "REVOKED"]},
+    "adoption_state": {"enum": ["DISCOVERED", "INSPECTED", "REJECTED", "TEST_APPROVED", "PERSISTENT_ADOPTION_PENDING_CONSENT", "APPROVED", "QUARANTINED", "UNAVAILABLE", "BLOCKED"]},
+    "fallback": {"type": "string", "maxLength": 512, "pattern": "^[^\\r\\n\\u0000]*$"},
+    "materiality": {"enum": ["MATERIAL", "NON_MATERIAL", "UNKNOWN"]},
+    "evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 2, "maxLength": 512, "pattern": "^[A-Za-z0-9][A-Za-z0-9+._:/#?=&@%~,'()\\-]+$"}, "uniqueItems": true},
+    "notes": {"type": "string", "maxLength": 1024, "pattern": "^[^\\r\\n\\u0000]+$"}
+  }
+}
