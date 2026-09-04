@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run live Cognitive OS v1.4 capability E2E checks through Hermes.
+"""Run live Cognitive OS V1.5 capability E2E checks through Hermes.
 
 The harness is stdlib-only. Tool execution claims come from Hermes runtime/session
 artifacts, never from assistant prose alone. NotebookLM account state is protected
@@ -435,8 +435,31 @@ def _profile_names(text: str) -> set[str]:
 
 
 def _min_command_result(result: dict[str, Any]) -> dict[str, Any]:
+    command = result.get("command")
+    safe_command = None
+    if isinstance(command, list):
+        safe_command = []
+        redact_next: str | None = None
+        for value in command:
+            value = str(value)
+            if redact_next:
+                safe_command.append(redact_next)
+                redact_next = None
+                continue
+            if value in {"-q", "--query", "--prompt"}:
+                safe_command.append(value)
+                redact_next = "[REDACTED_CONTENT]"
+                continue
+            if value in {"--source"}:
+                safe_command.append(value)
+                redact_next = "[CORRELATION_MARKER]"
+                continue
+            if Path(value).is_absolute():
+                safe_command.append("[SCOPED_PATH]")
+            else:
+                safe_command.append(value)
     return {
-        "command": result.get("command"),
+        "command": safe_command,
         "exit_code": result.get("exit_code"),
         "timed_out": result.get("timed_out"),
         "stdout": sanitize_text(str(result.get("stdout") or ""))[:2000],
@@ -531,7 +554,10 @@ def prepare_profile(
     target = profile_home(profile) / "skills" / "cognitive-os"
     target.parent.mkdir(parents=True, exist_ok=True)
     if target.exists():
-        shutil.rmtree(target)
+        raise RuntimeError(
+            f"refusing to overwrite an existing Hermes profile skill at {profile!r}; "
+            "use a fresh isolated --profile for this run"
+        )
     shutil.copytree(SKILL_SOURCE, target)
 
     settings = [
@@ -553,8 +579,8 @@ def prepare_profile(
 
     return {
         "profile": profile,
-        "profile_home": str(profile_home(profile)),
-        "skill_path": str(target),
+        "profile_scope": f"hermes-profile:{profile}",
+        "skill_path": "skills/cognitive-os",
         "model": model,
         "base_url": base_url,
         "context_length": context_length,

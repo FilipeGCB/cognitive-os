@@ -112,6 +112,9 @@ def ollama_chat(
     req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"}, method="POST")
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         body = json.loads(resp.read().decode("utf-8"))
+    # Keep the request bound in local metadata so a provider reporting `stop`
+    # cannot hide a response that reached the generation ceiling.
+    body["_requested_num_predict"] = num_predict
     content = body["message"]["content"]
     return (content, body) if return_metadata else content
 
@@ -120,7 +123,10 @@ def response_flags(response: str, metadata: dict, *, tags: list[str]) -> dict[st
     """Record deterministic risks without treating model prose as runtime evidence."""
 
     done_reason = str(metadata.get("done_reason") or "").lower()
-    truncated = done_reason in {"length", "max_tokens", "timeout"} or bool(metadata.get("truncated"))
+    requested = metadata.get("_requested_num_predict")
+    generated = metadata.get("eval_count")
+    reached_generation_ceiling = isinstance(requested, int) and isinstance(generated, int) and generated >= requested
+    truncated = done_reason in {"length", "max_tokens", "timeout"} or bool(metadata.get("truncated")) or reached_generation_ceiling
     identity_mentions = any(pattern.search(response) for pattern in IDENTITY_PATTERNS)
     # A model-generated audit record has no host observation in this runner.
     # We report the risk; cases only fail on it when their rubric explicitly
@@ -176,9 +182,26 @@ ASSISTANT RESPONSE:
         grade = json.loads(raw_grade)
     except json.JSONDecodeError:
         grade = {"pass": False, "must_met": [], "must_not_avoided": [], "reason": "grader returned invalid JSON"}
-    malformed_structured_output = False
-    if not isinstance(grade, dict) or not isinstance(grade.get("pass"), bool):
-        malformed_structured_output = True
+    malformed_structured_output = True
+    if isinstance(grade, dict):
+        expected_grade_keys = {"pass", "must_met", "must_not_avoided", "reason"}
+        grade_keys_ok = set(grade) == expected_grade_keys
+        must_met = grade.get("must_met")
+        must_not_avoided = grade.get("must_not_avoided")
+        arrays_ok = (
+            isinstance(must_met, list)
+            and isinstance(must_not_avoided, list)
+            and len(must_met) == len(case["must"])
+            and len(must_not_avoided) == len(case["must_not"])
+            and all(isinstance(item, bool) for item in must_met)
+            and all(isinstance(item, bool) for item in must_not_avoided)
+        )
+        malformed_structured_output = not (
+            grade_keys_ok
+            and isinstance(grade.get("pass"), bool)
+            and isinstance(grade.get("reason"), str)
+            and arrays_ok
+        )
     passed = bool(grade.get("pass")) and not bool(flags["truncated"]) and not malformed_structured_output and not bool(flags["invented_identity"])
     critical = bool(case.get("critical", case["id"] in CRITICAL_IDS))
     return {
@@ -224,7 +247,7 @@ def main() -> int:
         print(f"RUN {case['id']}", flush=True)
         try:
             results.append(run_case(args.url, args.model, case, grader_model=args.grader_model))
-        except (urllib.error.URLError, TimeoutError, RuntimeError, KeyError) as exc:
+        except (urllib.error.URLError, TimeoutError, RuntimeError, KeyError, json.JSONDecodeError, TypeError, ValueError) as exc:
             results.append({
                 "id": case["id"], "tags": case["tags"], "prompt": case["prompt"], "response": "",
                 "grade": {"pass": False, "reason": f"execution failure: {exc}"},

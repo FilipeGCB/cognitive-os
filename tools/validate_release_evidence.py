@@ -178,12 +178,34 @@ def validate_release_evidence(
     if not isinstance(tests, Mapping):
         raise ReleaseEvidenceError("tests must be an object")
     _require_keys(tests, {"total", "passed", "failed", "critical_failures", "conformance_schema", "grader_independent"}, {"total", "passed", "failed", "critical_failures", "conformance_schema", "grader_independent"}, "tests")
-    if not all(isinstance(tests[field], int) and tests[field] >= 0 for field in ("total", "passed", "failed")):
+    if not all(isinstance(tests[field], int) and not isinstance(tests[field], bool) and tests[field] >= 0 for field in ("total", "passed", "failed")):
         raise ReleaseEvidenceError("test counts must be non-negative integers")
-    if tests["passed"] + tests["failed"] > tests["total"]:
-        raise ReleaseEvidenceError("test counts exceed total")
+    if tests["total"] < 1 or tests["passed"] + tests["failed"] != tests["total"]:
+        raise ReleaseEvidenceError("test counts must account for every test exactly")
     if not isinstance(tests["critical_failures"], list) or not isinstance(tests["grader_independent"], bool):
         raise ReleaseEvidenceError("tests critical failures/independence malformed")
+    model_results = tests.get("model_results", [])
+    if not isinstance(model_results, list):
+        raise ReleaseEvidenceError("tests.model_results must be a list")
+    for index, model_result in enumerate(model_results):
+        if not isinstance(model_result, Mapping):
+            raise ReleaseEvidenceError(f"tests.model_results[{index}] must be an object")
+        _require_keys(
+            model_result,
+            {"sut", "grader", "passed", "total", "critical_failures", "truncated_cases", "invented_identity_cases"},
+            {"sut", "grader", "passed", "total", "critical_failures", "truncated_cases", "invented_identity_cases"},
+            f"tests.model_results[{index}]",
+        )
+        for field in ("sut", "grader"):
+            if not isinstance(model_result[field], str) or not model_result[field].strip():
+                raise ReleaseEvidenceError(f"tests.model_results[{index}].{field} must be bounded text")
+        if any(isinstance(model_result[field], bool) or not isinstance(model_result[field], int) or model_result[field] < 0 for field in ("passed", "total")):
+            raise ReleaseEvidenceError(f"tests.model_results[{index}] counts are malformed")
+        if model_result["total"] < 1 or model_result["passed"] > model_result["total"]:
+            raise ReleaseEvidenceError(f"tests.model_results[{index}] counts are contradictory")
+        for field in ("critical_failures", "truncated_cases", "invented_identity_cases"):
+            if not isinstance(model_result[field], list) or any(not isinstance(item, str) or not item for item in model_result[field]):
+                raise ReleaseEvidenceError(f"tests.model_results[{index}].{field} is malformed")
     for field in ("hermes_e2e", "work", "distribution", "telemetry", "collector"):
         status = record[field]
         if not isinstance(status, Mapping):

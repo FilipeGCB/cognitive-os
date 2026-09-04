@@ -43,6 +43,22 @@ class HermesE2EHarnessTests(unittest.TestCase):
         self.assertIn("safe=line", clean)
         self.assertIn("[REDACTED]", clean)
 
+    def test_command_evidence_redacts_prompt_source_and_absolute_path(self):
+        result = h._min_command_result(
+            {
+                "command": [
+                    "hermes", "chat", "--source", "private-run-marker", "-q", "private prompt", "/home/private/file",
+                ],
+                "exit_code": 0,
+                "timed_out": False,
+                "stdout": "ok",
+                "stderr": "",
+            }
+        )
+        self.assertEqual(result["command"], ["hermes", "chat", "--source", "[CORRELATION_MARKER]", "-q", "[REDACTED_CONTENT]", "[SCOPED_PATH]"])
+        self.assertNotIn("private prompt", json.dumps(result))
+        self.assertNotIn("private-run-marker", json.dumps(result))
+
     def test_extract_tool_events_accepts_common_hermes_shapes(self):
         session = {
             "messages": [

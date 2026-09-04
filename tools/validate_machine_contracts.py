@@ -18,12 +18,15 @@ from cognitive_os_contracts import (  # noqa: E402
     validate_forensic_manifest,
     validate_run_record,
 )
+sys.path.insert(0, str(ROOT))
+from telemetry.flight_recorder import sanitize_usage_trace  # noqa: E402
 
 SCHEMA_DIR = ROOT / "skills" / "cognitive-os" / "schemas"
 VALIDATORS: dict[str, Callable[[dict[str, Any]], Any]] = {
     "cognitive-run-record": validate_run_record,
     "capability-decision-record": validate_capability_decision,
     "forensic-diagnostic-manifest": validate_forensic_manifest,
+    "cognitive-usage-trace": sanitize_usage_trace,
 }
 
 
@@ -44,6 +47,7 @@ def validate_schema_documents() -> list[str]:
         "capability-decision-record.schema.json",
         "forensic-diagnostic-manifest.schema.json",
         "release-evidence-record.schema.json",
+        "cognitive-usage-trace.schema.json",
     }
     for filename in sorted(expected):
         path = SCHEMA_DIR / filename

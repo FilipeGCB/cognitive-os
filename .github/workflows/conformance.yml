@@ -1,7 +1,16 @@
-name: v1.4-conformance
+name: v1.5-conformance
 
 on:
   workflow_dispatch:
+    inputs:
+      sut_model:
+        description: "Ollama SUT model"
+        required: false
+        default: "qwen3:4b"
+      grader_model:
+        description: "Optional independent grader model"
+        required: false
+        default: ""
   push:
     branches:
       - feat/**
@@ -31,26 +40,38 @@ jobs:
           docker logs ollama
           exit 1
 
-      - name: Pull conformance model
-        run: docker exec ollama ollama pull qwen3:4b
+      - name: Pull conformance SUT model
+        env:
+          SUT_MODEL: ${{ inputs.sut_model || 'qwen3:4b' }}
+        run: docker exec ollama ollama pull "$SUT_MODEL"
 
-      - name: Run V1.4 behavioral conformance
+      - name: Pull independent grader model when configured
+        if: ${{ inputs.grader_model != '' }}
+        env:
+          GRADER_MODEL: ${{ inputs.grader_model }}
+        run: docker exec ollama ollama pull "$GRADER_MODEL"
+
+      - name: Run V1.5 behavioral conformance
+        env:
+          SUT_MODEL: ${{ inputs.sut_model || 'qwen3:4b' }}
+          GRADER_MODEL: ${{ inputs.grader_model }}
+          COGNITIVE_OS_CANDIDATE_SHA: ${{ github.sha }}
         run: |
-          python evals/run_local_conformance.py \
-            --model qwen3:4b \
-            --out evals/runs/v1.4-qwen3-4b-conformance.json
+          args=(--suite v1.5 --model "$SUT_MODEL" --out evals/runs/v1.5-conformance.json)
+          if test -n "$GRADER_MODEL"; then args+=(--grader-model "$GRADER_MODEL"); fi
+          python evals/run_local_conformance.py "${args[@]}"
 
       - name: Publish summary
         if: always()
         run: |
-          if test -f evals/runs/v1.4-qwen3-4b-conformance.json; then
+          if test -f evals/runs/v1.5-conformance.json; then
             python - <<'PY'
           import json
           from pathlib import Path
-          p = Path('evals/runs/v1.4-qwen3-4b-conformance.json')
+          p = Path('evals/runs/v1.5-conformance.json')
           d = json.loads(p.read_text())
           with open(__import__('os').environ['GITHUB_STEP_SUMMARY'], 'a') as f:
-              f.write('# Cognitive OS V1.4 local conformance\n\n')
+              f.write('# Cognitive OS V1.5 local conformance\n\n')
               f.write(f"- SUT: `{d['sut_model']}`\n")
               f.write(f"- Grader: separate invocation of `{d['grader_model']}`\n")
               f.write(f"- Result: **{d['overall']}**\n")
@@ -63,6 +84,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v1.4-qwen3-4b-conformance
-          path: evals/runs/v1.4-qwen3-4b-conformance.json
+          name: v1.5-conformance
+          path: evals/runs/v1.5-conformance.json
           if-no-files-found: warn

@@ -1,0 +1,20 @@
+{
+  "schema_version": "cognitive-os-distribution-manifest-v1.5",
+  "target": "agent-skills",
+  "source_commit": "UNRELEASED_WORKTREE",
+  "package_version": "1.5.0-dev",
+  "included_assets": ["skills/cognitive-os"],
+  "projected_assets": ["SKILL.md", "references/", "policies/", "schemas/", "VERSION"],
+  "omitted_assets": ["bootstrap/", "telemetry/", "tools/", "evals/", "adapters/"],
+  "feature_availability": {
+    "cognitive_core": "COMPLETE",
+    "capability_discovery_policy": "COMPLETE",
+    "machine_contract_documents": "COMPLETE",
+    "machine_contract_runtime_validator": "UNAVAILABLE",
+    "flight_recorder": "UNAVAILABLE",
+    "telemetry_sharing": "UNAVAILABLE",
+    "forensic_bundle_runtime": "UNAVAILABLE"
+  },
+  "schema_enforcement": "PARTIAL",
+  "notes": "The portable skill artifact carries human contracts and schemas; host/runtime enforcement is not implied by a copy-only installer."
+}

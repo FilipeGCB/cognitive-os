@@ -35,6 +35,14 @@ PUBLIC_SCAN_ROOTS = [
     ROOT / "renderers",
     ROOT / "examples",
     ROOT / "docs" / "capabilities",
+    ROOT / "docs" / "architecture",
+    ROOT / "docs" / "baselines",
+    ROOT / "docs" / "evidence",
+    ROOT / "docs" / "migration",
+    ROOT / "docs" / "telemetry-privacy-notice.md",
+    ROOT / "docs" / "telemetry-collector-contract.md",
+    ROOT / "distribution",
+    ROOT / "telemetry",
 ]
 
 
@@ -68,7 +76,15 @@ def validate() -> list[str]:
         RUNTIME / "references" / "routing.md",
         RUNTIME / "references" / "output.md",
         RUNTIME / "schemas" / "decision-pack.md",
+        RUNTIME / "schemas" / "cognitive-run-record.schema.json",
+        RUNTIME / "schemas" / "capability-decision-record.schema.json",
+        RUNTIME / "schemas" / "cognitive-usage-trace.schema.json",
         RUNTIME / "policies" / "installation-consent.md",
+        RUNTIME / "policies" / "telemetry-privacy.md",
+        ROOT / "distribution" / "manifest.schema.json",
+        ROOT / "telemetry" / "defaults.json",
+        ROOT / "telemetry" / "defaults.schema.json",
+        ROOT / "docs" / "telemetry-privacy-notice.md",
     ]
     for path in required:
         if not path.is_file():

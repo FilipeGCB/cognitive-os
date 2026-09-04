@@ -1,6 +1,6 @@
-# Hermes live E2E gate
+# Hermes live capability gate — Cognitive OS V1.5
 
-This directory contains the maintainer-only live capability gate for Cognitive OS v1.4.
+This directory contains the maintainer-only live capability gate for Cognitive OS V1.5. The H14 cases are preserved V1.4 regressions and their historical evidence is not silently rewritten.
 
 It complements behavioral conformance. The 29-case conformance suite proves cognitive behavior with tools withheld; this harness proves selected capabilities through an actual Hermes host and records host-observed calls/results.
 
@@ -116,7 +116,7 @@ python3 evals/e2e/run_hermes_e2e.py notebooklm-check \
   --out-dir evals/runs/hermes-e2e/current
 ```
 
-The harness may check `notebooklm auth check --test --json`, add/test the `notebooklm-mcp` process in the isolated Hermes profile and invoke it read-only. It never runs `notebooklm login`. If authentication is missing/expired, stop and authenticate manually outside the harness before rerunning.
+The harness may check `notebooklm auth check --test --json`, test a preconfigured `notebooklm` server in the isolated Hermes profile and invoke it read-only. It never runs `notebooklm login` or changes MCP configuration. If authentication is missing/expired, stop and authenticate manually outside the harness before rerunning.
 
 ## 7. Summarize
 
@@ -138,4 +138,6 @@ H14-E05 PASS
 H14-E06 PASS
 ```
 
-Only observed live results may be copied into `docs/releases/v1.4.0-release-evidence.md`. The harness does not set `RELEASE_GATE: PASS`.
+Only observed live results may be copied into a candidate-bound V1.5 evidence
+record after sanitization. The harness does not set a release gate or promote a
+candidate.

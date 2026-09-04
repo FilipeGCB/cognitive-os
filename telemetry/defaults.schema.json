@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cognitive-os.dev/schemas/telemetry-defaults-v1.5.json",
+  "title": "Cognitive OS V1.5 public telemetry defaults",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "telemetry_schema", "endpoint", "privacy_notice_url", "enabled", "default_mode", "retention"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "telemetry_schema": {"const": "cognitive-os-usage-trace-v1.5"},
+    "endpoint": {"type": ["string", "null"], "pattern": "^https://[^\\r\\n\\u0000]+$"},
+    "privacy_notice_url": {"type": "string", "minLength": 1, "maxLength": 512, "pattern": "^[^\\r\\n\\u0000]+$"},
+    "enabled": {"const": false},
+    "default_mode": {"const": "OFF"},
+    "retention": {
+      "type": "object", "additionalProperties": false,
+      "required": ["detailed_events_days", "aggregates_months", "raw_conversation_days", "research_free_text_days", "application_stored_ip_days"],
+      "properties": {
+        "detailed_events_days": {"type": "integer", "minimum": 0},
+        "aggregates_months": {"type": "integer", "minimum": 0},
+        "raw_conversation_days": {"const": 0},
+        "research_free_text_days": {"const": 0},
+        "application_stored_ip_days": {"const": 0}
+      }
+    }
+  }
+}

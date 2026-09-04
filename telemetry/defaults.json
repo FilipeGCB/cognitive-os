@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "telemetry_schema": "cognitive-os-usage-trace-v1.5",
+  "endpoint": null,
+  "privacy_notice_url": "docs/telemetry-privacy-notice.md",
+  "enabled": false,
+  "default_mode": "OFF",
+  "retention": {
+    "detailed_events_days": 30,
+    "aggregates_months": 12,
+    "raw_conversation_days": 0,
+    "research_free_text_days": 0,
+    "application_stored_ip_days": 0
+  }
+}

@@ -23,8 +23,22 @@ SCAN_ROOTS = [
     ROOT / "distribution",
     ROOT / "docs" / "capabilities",
     ROOT / "docs" / "releases",
+    ROOT / "docs" / "architecture",
+    ROOT / "docs" / "baselines",
+    ROOT / "docs" / "evidence",
+    ROOT / "docs" / "migration",
+    ROOT / "telemetry",
 ]
-SCAN_FILES = [ROOT / "README.md", ROOT / "CHANGELOG.md", ROOT / "CONTRIBUTING.md"]
+SCAN_FILES = [
+    ROOT / "README.md",
+    ROOT / "README.pt-BR.md",
+    ROOT / "CHANGELOG.md",
+    ROOT / "CONTRIBUTING.md",
+    ROOT / "docs" / "HOST_MATRIX_V1_5.md",
+    ROOT / "docs" / "reproducibility.md",
+    ROOT / "docs" / "telemetry-privacy-notice.md",
+    ROOT / "docs" / "telemetry-collector-contract.md",
+]
 
 PATTERNS = {
     "email address": re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I),

@@ -23,6 +23,20 @@ class ConformanceRunnerTests(unittest.TestCase):
         self.assertIn("must not be treated as private chain-of-thought", prompt)
         self.assertIn("hidden step-by-step", prompt)
 
+    def test_deterministic_response_flags_expose_truncation_and_unobserved_identity(self):
+        flags = runner.response_flags(
+            "run_id: CRR-20260904-120000-ABCD\ncreated_at: 2026-09-04T12:00:00Z",
+            {"done_reason": "length"},
+            tags=["audit", "runtime-evidence"],
+        )
+        self.assertTrue(flags["truncated"])
+        self.assertTrue(flags["invented_identity"])
+
+    def test_v15_cases_mark_critical_gates_for_model_specific_reduction(self):
+        cases = runner.load_cases([ROOT / "evals" / "v1.5-cases.json", ROOT / "evals" / "v1.5-output-cases.json"])
+        self.assertTrue(any(case.get("critical") for case in cases))
+        self.assertTrue(any(case["id"] == "RC-01" and case.get("critical") for case in cases))
+
 
 if __name__ == "__main__":
     unittest.main()
