@@ -127,6 +127,12 @@ Rules:
 - documentation and model knowledge are not invocation evidence.
 - `AVAILABLE + AUTHENTICATED` never implies `GRANTED` for the current run.
 - A successful result requires runtime-observed availability, invocation, required authentication, applicable run consent and at least one evidence reference.
+- For observed read-only local use within host permissions, `run_consent_state: NOT_REQUIRED` is valid; do not demand unrelated account consent.
+
+When the record is requested without host-observed identity or invocation
+evidence, use `UNKNOWN`, `NOT_APPLICABLE` or `NOT_CALLED` and bounded gaps.
+Do not fill the ledger's example rows with invented Web Search, corpus,
+quota/rate-limit or tool-success events.
 
 ## Method Ledger
 

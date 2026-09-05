@@ -114,3 +114,9 @@ evidence_refs: [run://...]
 ```
 
 `AVAILABLE`, `AUTHENTICATED` and `APPROVED` are not run consent. A capability that requires consent can only be `CALLED` with `run_consent_state: GRANTED`; a successful result requires runtime evidence references. Find Skills/Find MCP are represented as discovery assets and never as the candidate capability they discover.
+
+For a read-only local capability that is available within observed host
+permissions and does not cross an account or sensitive boundary, use
+`run_consent_state: NOT_REQUIRED`; unrelated external-account or installation
+consent must not block that use. This exception does not apply to external,
+account-bound, persistent or consequential capabilities.

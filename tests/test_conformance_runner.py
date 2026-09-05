@@ -28,6 +28,8 @@ class ConformanceRunnerTests(unittest.TestCase):
         self.assertIn("observable audit", prompt)
         self.assertIn("must not be treated as private chain-of-thought", prompt)
         self.assertIn("hidden step-by-step", prompt)
+        self.assertIn("not_called", prompt)
+        self.assertIn("isolated substrings", prompt)
 
     def test_model_prompts_request_actions_without_inventing_runtime_identity(self):
         case = {"id": "RS-06", "tags": ["v1.5", "research-budget"], "must": ["close"], "must_not": ["fabricate"]}

@@ -579,6 +579,12 @@ def context_for(tags: list[str]) -> str:
             SKILL / "schemas" / "forensic-diagnostic-manifest.md",
             ROOT / "telemetry" / "defaults.json",
         ]
+    if tagset & {"machine-contracts", "state-semantics"}:
+        paths += [
+            SKILL / "schemas" / "cognitive-run-record.md",
+            SKILL / "schemas" / "capability-decision-record.md",
+            ROOT / "bootstrap" / "cognitive_os_contracts.py",
+        ]
     if tagset & {"host-portability"}:
         paths += [
             ROOT / "docs" / "HOST_MATRIX_V1_5.md",
@@ -595,7 +601,10 @@ def context_for(tags: list[str]) -> str:
             ROOT / "docs" / "reproducibility.md",
         ]
     if tagset & {"provider-resilience"}:
-        paths += [ROOT / "bootstrap" / "cognitive_os_resilience.py"]
+        paths += [
+            ROOT / "bootstrap" / "cognitive_os_resilience.py",
+            SKILL / "references" / "research-routing.md",
+        ]
     if tagset & AUDIT_TAGS:
         paths += [SKILL / "schemas" / "cognitive-run-record.md", SKILL / "references" / "output.md"]
     if any(tag.startswith("conclusion") or tag in {
@@ -626,6 +635,11 @@ def response_num_predict_for(tags: list[str]) -> int:
 
 def grader_system_prompt(tags: list[str]) -> str:
     prompt = "You are a strict conformance grader. Return valid JSON only."
+    prompt += (
+        " Grade semantic behavior, not isolated substrings: a negated enum such as NOT_CALLED "
+        "is evidence that CALLED did not occur, and must_not is violated only by the prohibited behavior "
+        "itself. Do not treat an explicit refusal or a statement of absence as execution."
+    )
     if set(tags) & AUDIT_TAGS:
         prompt += (
             " Observable audit records and ledgers that report phase, branch, capability, evidence, or gap states "
@@ -639,6 +653,65 @@ def sut_system_prompt(case: dict) -> str:
     """Give the SUT operational context without manufacturing runtime facts."""
 
     context = context_for(case["tags"])
+    guidance: list[str] = []
+    tagset = set(case["tags"])
+    if tagset & {"audit", "audit-preserved", "no-chain-of-thought"}:
+        guidance.append(
+            "For an audit record with no host-observed identity or tool evidence, do not populate illustrative phases "
+            "with claims such as Web Search used, corpus read, rate limit reached, quota consumed or capability success. "
+            "Use UNKNOWN/NOT_APPLICABLE and bounded gaps; never turn a schema template into a factual execution record."
+        )
+    if tagset & {"research-budget", "grounded-corpus", "research-routing"}:
+        guidance.append(
+            "Apply the route to the scenario directly. For a clear cross-source/repeated-query signal, state Grounded "
+            "Corpus consideration without asking ritual clarification. For compaction, explicitly record compaction, "
+            "reconsider grounded corpus, traceability and remaining budget."
+        )
+    if tagset & {"telemetry", "privacy", "forensics"}:
+        guidance.append(
+            "When asked for a telemetry preview or forensic scope, show the concrete bounded artifact/template and its "
+            "allowlisted fields. Include run/window/sources/session-task bounds for forensics and k < 10 suppression for "
+            "aggregates; a policy-only essay is insufficient."
+        )
+    if tagset & {"machine-contracts", "state-semantics"}:
+        guidance.append(
+            "Apply the strict machine contract to the stated input. Reject unknown fields and preserve independent "
+            "FLOW_COVERAGE, EXECUTION_INTEGRITY, RUN_STATUS and DECISION_STATE; do not answer with a menu of permissive "
+            "alternatives when the contract is explicit. For a field named private_reasoning, state directly that the "
+            "strict validator rejects the object because the unknown field is not allowed."
+        )
+    if tagset & {"runtime-consent"}:
+        guidance.append(
+            "For an available read-only local capability within observed host permissions, proceed without unrelated "
+            "external-account or installation consent. Reserve explicit consent for account-bound, external, persistent "
+            "or consequential operations. State consent_required = false and run_consent_state = NOT_REQUIRED for "
+            "the local scenario when those facts are supplied."
+        )
+    if tagset & {"provider-resilience"}:
+        guidance.append(
+            "When the scenario asks to resolve a provider parameter or close a provider failure, emit the concrete "
+            "requested/supported/selected/state/fallback/limitation or completed-work/failure/gap/next-proof fields "
+            "for this scenario (an explicitly labelled illustrative value is acceptable when the prompt omits the exact "
+            "numbers), not placeholders or only a general recipe."
+        )
+    if tagset & {"host-portability"}:
+        guidance.append(
+            "When a host surface is unavailable, mark the test evidence NOT_EXECUTED (while individual capability "
+            "availability may be UNKNOWN) and provide an exact numbered smoke procedure plus expected observable states; "
+            "start with `Work evidence: NOT_EXECUTED`."
+        )
+    if tagset & {"distribution", "version"}:
+        guidance.append(
+            "Distinguish shipped schema/policy documents from host enforcement. A version mismatch is a failed "
+            "synchronization and an installed package with partial enforcement must state that limitation explicitly."
+        )
+    if tagset & {"grounded-strategy", "no-framework-dump", "readable-markdown"}:
+        guidance.append(
+            "Lead a decision brief with the decision or decision condition, then audience, problem and outcome; only "
+            "after that separate mechanism, product, operation and opportunity. Put `Decision:` as the first line and "
+            "do not lead with a hypothetical disclaimer; if a scenario is needed, label it after the decision."
+        )
+    guidance_text = "\n\nCASE-SPECIFIC OPERATIONAL GUARD:\n- " + "\n- ".join(guidance) if guidance else ""
     return (
         "You are an AI agent with the Cognitive OS skill installed. Follow the supplied skill files as operational instructions. "
         "Answer the user's request directly and concisely, normally under 600 words. When the prompt describes a current "
@@ -650,6 +723,7 @@ def sut_system_prompt(case: dict) -> str:
         "labelled synthetic allowlisted preview and request separate explicit telemetry consent; do not claim that anything "
         "was sent. Do not mention this evaluation, its rubric, or internal hidden reasoning.\n\n"
         + context
+        + guidance_text
         + "\n\nFINAL OPERATIONAL GUARD: This is a text-only conformance scenario, not a host-observed execution. "
         "If the user did not supply a concrete run ID, timestamp, session ID, tool observation or provenance record, "
         "do not create one and do not label model-generated data HOST_OBSERVED. For an audit closure, omit unobserved "
@@ -668,6 +742,7 @@ def grader_prompt(case: dict, response: str) -> str:
 Return compact JSON only with exactly these keys: pass (boolean), must_met (array of booleans), must_not_avoided (array of booleans), reason (short string).
 There are exactly {len(case["must"])} must item(s) and {len(case["must_not"])} must_not item(s). Return exactly those array lengths; do not split one rubric item into subcriteria.
 A case passes only if every must item is satisfied and every must_not item is avoided. Do not reward intent; grade the actual response.
+For must_not semantics, an explicit negation such as `invocation = NOT_CALLED` does not violate a prohibition on `CALLED`; grade the state asserted by the response, not a substring match.
 
 RUBRIC:
 {json.dumps({"id": case["id"], "must": case["must"], "must_not": case["must_not"]}, ensure_ascii=False, indent=2)}

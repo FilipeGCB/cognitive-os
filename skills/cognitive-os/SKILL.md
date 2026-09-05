@@ -105,6 +105,14 @@ Keep `availability`, `auth_state`, `run_consent_state`, `invocation` and
 NOT_CALLED` is available but not authorized for this run. Account-bound use
 requires explicit run consent. Use `UNKNOWN` when runtime observation is absent.
 
+Consent is proportional to the capability boundary. When the host has
+observed a read-only local capability as available and permitted, use it within
+that permission without asking for unrelated external-account or installation
+consent; record `run_consent_state: NOT_REQUIRED` when the contract applies.
+Do not apply the account-bound refusal rule to that local case. External,
+account-bound, persistent or consequential operations retain their explicit
+consent gate.
+
 Use the smallest sufficient capability. Prefer an already available native capability over installing a redundant companion.
 
 ## Research
