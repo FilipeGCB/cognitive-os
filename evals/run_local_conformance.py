@@ -670,7 +670,8 @@ def sut_system_prompt(case: dict) -> str:
         guidance.append(
             "When asked for a telemetry preview or forensic scope, show the concrete bounded artifact/template and its "
             "allowlisted fields. Include run/window/sources/session-task bounds for forensics and k < 10 suppression for "
-            "aggregates; a policy-only essay is insufficient."
+            "aggregates; a policy-only essay is insufficient. State explicitly that telemetry is optional and not "
+            "required for normal Cognitive OS use, and that OFF means no collection or sharing."
         )
     if tagset & {"machine-contracts", "state-semantics"}:
         guidance.append(
