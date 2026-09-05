@@ -23,7 +23,7 @@ class SkillStructureTests(unittest.TestCase):
 
     def test_public_skill_has_no_private_runtime_dependency(self):
         text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
-        forbidden = ["FilipeGCB/obsidian-notes", "Host A", "GPT privado", "Vivo"]
+        forbidden = ["private-vault-repository-marker", "Host A", "GPT privado", "Vivo"]
         for token in forbidden:
             self.assertNotIn(token, text)
 

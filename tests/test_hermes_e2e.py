@@ -47,7 +47,7 @@ class HermesE2EHarnessTests(unittest.TestCase):
         result = h._min_command_result(
             {
                 "command": [
-                    "hermes", "chat", "--source", "private-run-marker", "-q", "private prompt", "/home/private/file",
+                    "hermes", "chat", "--source", "private-run-marker", "-q", "private prompt", "/private/scoped/file",
                 ],
                 "exit_code": 0,
                 "timed_out": False,

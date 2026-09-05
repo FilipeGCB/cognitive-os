@@ -16,8 +16,8 @@ ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = ROOT / "skills" / "cognitive-os"
 
 FORBIDDEN_TEXT = [
-    "FilipeGCB/obsidian-notes",
-    "/home/filipegcb/",
+    "private-vault-repository-marker",
+    "/home/",
     "storage_state.json\"",  # catches accidental JSON/auth-file embedding, not documentation prose
     "-----BEGIN PRIVATE KEY-----",
     "-----BEGIN RSA PRIVATE KEY-----",

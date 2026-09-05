@@ -235,7 +235,7 @@ private and `PARTIAL` because no deployed endpoint is claimed.
 
 **Files:**
 - Modify: `telemetry/client.py`, defaults and privacy notice only after Gate T evidence.
-- Optional separate private repository: `FilipeGCB/cognitive-os-telemetry` only after programmatic `visibility=private` proof.
+- Optional separate collector repository only after programmatic proof of `visibility=private`.
 - Create: `docs/releases/v1.5.0-dev-release-evidence.md`
 - Create: `docs/releases/v1.5.0-dev-release-evidence.json`
 - Create: `docs/migration/v1.4-to-v1.5.md`
