@@ -6,38 +6,20 @@ const OFFICIAL_MCP_SERVERS = `${OFFICIAL_MCP_REGISTRY}/v0.1/servers`;
 const TELEMETRY_ENDPOINT = "https://wsqumhrcdwgoskolziuy.supabase.co/functions/v1/cognitive-os-telemetry";
 const POLICY_VERSION = "cognitive-os-telemetry-policy-v1.5";
 const PRIVACY_URL = "https://github.com/FilipeGCB/cognitive-os/blob/main/docs/telemetry-privacy-notice.md";
-const EXPECTED_HOST = "wsqumhrcdwgoskolziuy.supabase.co";
 
 const capabilityResult = z.enum([
-  "success",
-  "partial",
-  "truncated",
-  "rate_limited",
-  "unavailable",
-  "blocked",
-  "failed",
-  "not_called",
+  "success", "partial", "truncated", "rate_limited", "unavailable", "blocked", "failed", "not_called",
 ]);
 const groundingResult = z.enum(["success", "partial", "unavailable", "blocked", "failed", "not_called"]);
 const decisionState = z.enum([
-  "ready_to_decide",
-  "decided",
-  "test_required",
-  "more_evidence_required",
-  "blocked",
-  "no_action_recommended",
-  "recommendation_only",
-  "unknown",
+  "ready_to_decide", "decided", "test_required", "more_evidence_required", "blocked",
+  "no_action_recommended", "recommendation_only", "unknown",
 ]);
 const runStatus = z.enum(["complete", "partial", "failed", "blocked", "unknown"]);
 const helpfulness = z.enum(["HELPED", "PARTIALLY_HELPED", "NOT_HELPED"]).nullable();
 const feedbackReason = z.enum([
-  "INSUFFICIENT_EVIDENCE",
-  "INSUFFICIENT_DEPTH",
-  "CAPABILITY_UNAVAILABLE_OR_INADEQUATE",
-  "INSUFFICIENT_CONTEXT",
-  "CLARITY",
-  "OTHER",
+  "INSUFFICIENT_EVIDENCE", "INSUFFICIENT_DEPTH", "CAPABILITY_UNAVAILABLE_OR_INADEQUATE",
+  "INSUFFICIENT_CONTEXT", "CLARITY", "OTHER",
 ]).nullable();
 
 function safeText(value: unknown, max = 240): string | null {
@@ -79,15 +61,16 @@ async function queryOfficialRegistry(query: string, limit: number) {
     const payload = await response.json();
     const raw = Array.isArray(payload?.servers) ? payload.servers : [];
     return raw.slice(0, limit).map((entry: any) => {
-      const server = entry?.server && typeof entry.server === "object" ? entry.server : entry;
+      const candidate = entry?.server && typeof entry.server === "object" ? entry.server : entry;
       return {
-        name: safeText(server?.name, 160) ?? "unknown",
-        title: safeText(server?.title ?? server?.displayName, 160),
-        version: safeText(server?.version, 80),
-        description: safeText(server?.description, 320),
-        repositoryUrl: typeof server?.repository?.url === "string" && server.repository.url.startsWith("https://")
-          ? server.repository.url.slice(0, 512)
-          : null,
+        name: safeText(candidate?.name, 160) ?? "unknown",
+        title: safeText(candidate?.title ?? candidate?.displayName, 160),
+        version: safeText(candidate?.version, 80),
+        description: safeText(candidate?.description, 320),
+        repositoryUrl:
+          typeof candidate?.repository?.url === "string" && candidate.repository.url.startsWith("https://")
+            ? candidate.repository.url.slice(0, 512)
+            : null,
       };
     });
   } finally {
@@ -156,7 +139,10 @@ function buildServer() {
       } catch (error) {
         return {
           isError: true,
-          content: [{ type: "text" as const, text: `Official MCP Registry discovery failed: ${error instanceof Error ? error.message : "unknown_error"}` }],
+          content: [{
+            type: "text" as const,
+            text: `Official MCP Registry discovery failed: ${error instanceof Error ? error.message : "unknown_error"}`,
+          }],
         };
       }
     },
@@ -194,15 +180,8 @@ function buildServer() {
         policyVersion: POLICY_VERSION,
         collectorConfigured: true as const,
         neverCollected: [
-          "prompts",
-          "responses",
-          "chain-of-thought",
-          "documents or file contents",
-          "private paths or URLs",
-          "credentials, tokens or cookies",
-          "client or project names",
-          "PII",
-          "arbitrary free text",
+          "prompts", "responses", "chain-of-thought", "documents or file contents", "private paths or URLs",
+          "credentials, tokens or cookies", "client or project names", "PII", "arbitrary free text",
         ],
       };
       return {
@@ -243,15 +222,9 @@ function buildServer() {
           notebooklm: groundingResult,
           compaction_occurred: z.boolean(),
         }),
-        failures: z.object({
-          rate_limited: z.boolean(),
-          provider_failure: z.boolean(),
-        }),
+        failures: z.object({ rate_limited: z.boolean(), provider_failure: z.boolean() }),
         sideEffects: z.object({ persistent_change: z.boolean() }),
-        feedback: z.object({
-          helpfulness,
-          reason: feedbackReason,
-        }),
+        feedback: z.object({ helpfulness, reason: feedbackReason }),
         decisionState,
         runStatus,
       }),
@@ -312,7 +285,10 @@ function buildServer() {
         return {
           isError: true,
           structuredContent: { state: "FAILED" as const, receipt: null, queueStatus: null },
-          content: [{ type: "text" as const, text: `Diagnostic send failed without affecting the Cognitive OS run: ${error instanceof Error ? error.message : "unknown_error"}` }],
+          content: [{
+            type: "text" as const,
+            text: `Diagnostic send failed without affecting the Cognitive OS run: ${error instanceof Error ? error.message : "unknown_error"}`,
+          }],
         };
       }
     },
@@ -324,15 +300,9 @@ function buildServer() {
 const handler = createMcpHandler(buildServer);
 
 Deno.serve(async (request: Request) => {
-  const url = new URL(request.url);
-  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-  const host = forwardedHost || request.headers.get("host") || url.host;
-  if (host !== EXPECTED_HOST) {
-    return new Response(JSON.stringify({ error: "invalid_host" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
-    });
-  }
+  // Supabase's public HTTPS gateway rewrites Host before the Edge Function sees
+  // the request, so host validation belongs at the gateway/TLS boundary rather
+  // than rejecting the internal forwarded value here. Bound request size here.
   const declaredLength = Number(request.headers.get("content-length") || "0");
   if (Number.isFinite(declaredLength) && declaredLength > 64 * 1024) {
     return new Response(JSON.stringify({ error: "request_too_large" }), {
