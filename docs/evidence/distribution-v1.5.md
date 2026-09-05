@@ -1,8 +1,8 @@
-# Distribution evidence — V1.5 candidate `3e2acaab`
+# Distribution evidence — V1.5 candidate `228046c`
 
 The canonical source is `skills/cognitive-os/`. Four target manifests were
 validated at candidate
-`3e2acaab1c54a20c13fbfe98b7a2322245b0bc24` and projected into fresh temporary
+`228046c1ca46a126f472dc0e87e73ad083b1fb77` and projected into fresh temporary
 install-like directories. The manifests intentionally use
 `UNRELEASED_WORKTREE` during development; release evidence binds the tested
 manifest bytes to the immutable candidate SHA.

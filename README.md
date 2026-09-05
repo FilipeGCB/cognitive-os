@@ -206,7 +206,7 @@ grader identity, so a grader change can reuse an observed SUT response without
 calling the SUT again. See the [runner contract](docs/evidence/conformance-runner-v1.5.md),
 the [V1.5 evidence pack](docs/evidence/), the [machine release-evidence record](docs/releases/v1.5.0-dev-release-evidence.json),
 and the [host matrix](docs/HOST_MATRIX_V1_5.md). These records bind behavioral
-claims to candidate `3e2acaab1c54a20c13fbfe98b7a2322245b0bc24`; this remains a
+claims to candidate `228046c1ca46a126f472dc0e87e73ad083b1fb77`; this remains a
 development candidate and is not a stable release.
 
 ## Conformance

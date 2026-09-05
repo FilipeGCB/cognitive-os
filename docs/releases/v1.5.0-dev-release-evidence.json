@@ -1,32 +1,32 @@
 {
   "schema_version": "cognitive-os-release-evidence-v1.5",
   "repository": "FilipeGCB/cognitive-os",
-  "candidate_sha": "3e2acaab1c54a20c13fbfe98b7a2322245b0bc24",
+  "candidate_sha": "228046c1ca46a126f472dc0e87e73ad083b1fb77",
   "version": "1.5.0-dev",
   "source_tree_fingerprint": "877f7959303c30c60f333b5d86ff19a0c2dd2617fb17b2b54fb1cea069691766",
   "manifests": [
     {
       "path": "distribution/manifests/agent-skills.json",
       "sha256": "a40460d5e8a5a87497d383e7b0e5bbd02f796bb46a8c640bab0fa560a3698198",
-      "source_commit": "3e2acaab1c54a20c13fbfe98b7a2322245b0bc24",
+      "source_commit": "228046c1ca46a126f472dc0e87e73ad083b1fb77",
       "version": "1.5.0-dev"
     },
     {
       "path": "distribution/manifests/openai.json",
       "sha256": "4121617146cc38deb1a51fcfc0ac73bbdd277893d87a41c612587ab6d7cb388d",
-      "source_commit": "3e2acaab1c54a20c13fbfe98b7a2322245b0bc24",
+      "source_commit": "228046c1ca46a126f472dc0e87e73ad083b1fb77",
       "version": "1.5.0-dev"
     },
     {
       "path": "distribution/manifests/claude.json",
       "sha256": "7a8fb53f214dd3953a88c89f796ee75ff6c387eb5192b3125b2b168ab1f1290d",
-      "source_commit": "3e2acaab1c54a20c13fbfe98b7a2322245b0bc24",
+      "source_commit": "228046c1ca46a126f472dc0e87e73ad083b1fb77",
       "version": "1.5.0-dev"
     },
     {
       "path": "distribution/manifests/gemini.json",
       "sha256": "b490e20101cf8c26e018c63181c544bdfca28f836fbad98c0a07bdf6ee5396e6",
-      "source_commit": "3e2acaab1c54a20c13fbfe98b7a2322245b0bc24",
+      "source_commit": "228046c1ca46a126f472dc0e87e73ad083b1fb77",
       "version": "1.5.0-dev"
     }
   ],
@@ -39,7 +39,7 @@
     "run_id": "CRR-20260905-012851-222DDAC9",
     "started_at": "2026-09-04T22:28:51-03:00",
     "finished_at": "2026-09-04T22:30:10-03:00",
-    "candidate_sha": "3e2acaab1c54a20c13fbfe98b7a2322245b0bc24",
+    "candidate_sha": "228046c1ca46a126f472dc0e87e73ad083b1fb77",
     "artifact_refs": [
       "docs/specs/2026-09-04-cognitive-os-v1.5-public-final.md",
       "evals/run_local_conformance.py",
@@ -67,8 +67,8 @@
     "generic host contract"
   ],
   "tests": {
-    "total": 155,
-    "passed": 155,
+    "total": 157,
+    "passed": 157,
     "failed": 0,
     "critical_failures": [],
     "conformance_schema": "cognitive-os-local-conformance-v3",
@@ -120,7 +120,7 @@
   },
   "hermes_e2e": {
     "state": "BLOCKED",
-    "evidence_refs": ["docs/evidence/hermes-v1.5-candidate-3e2acaab.md"]
+    "evidence_refs": ["docs/evidence/hermes-v1.5-candidate-228046c.md"]
   },
   "work": {
     "state": "UNAVAILABLE",

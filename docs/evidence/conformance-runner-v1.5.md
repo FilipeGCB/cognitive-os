@@ -91,3 +91,13 @@ This policy preserves 100% critical coverage and the complete 58-case release
 gate while avoiding a second complete symmetric matrix. It does not claim
 model portability from a single model: both Gemma and Qwen remain tested, and
 critical failures remain blocking.
+
+## Candidate observation
+
+On candidate `228046c1ca46a126f472dc0e87e73ad083b1fb77`, the revalidation
+produced `58/58`, `14/14` critical and `29/29` V1.4 with zero new model calls:
+the reports recorded the corresponding SUT and grade cache hits. A fresh
+single-case grader-change check recorded `sut_calls=0`, `grader_calls=1` and
+`actual_total=1`; producer-artifact counters were retained separately. This
+is the observable contract that prevents a grader-only change from silently
+regenerating SUT answers.

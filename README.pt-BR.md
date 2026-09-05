@@ -190,7 +190,7 @@ fingerprint, caso, modelo e configuração forem os mesmos. Consulte o
 [pacote de evidências da V1.5](docs/evidence/), o [registro machine-verifiable de
 release](docs/releases/v1.5.0-dev-release-evidence.json) e a [matriz de hosts](docs/HOST_MATRIX_V1_5.md).
 As afirmações comportamentais estão ligadas ao candidate
-`3e2acaab1c54a20c13fbfe98b7a2322245b0bc24`; esta ainda é uma linha de
+`228046c1ca46a126f472dc0e87e73ad083b1fb77`; esta ainda é uma linha de
 desenvolvimento, não uma release estável.
 
 ## Evidência da v1.4.0
