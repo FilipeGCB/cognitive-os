@@ -41,11 +41,7 @@ This installation-time rule does not authorize any candidate later discovered by
 
 Cloud hosts such as ChatGPT cannot pretend to install software on the user's computer. They must package equivalent discovery behavior in their supported plugin/app surface and declare unavailable local-machine behavior honestly.
 
-This supersedes earlier wording that treated exact discovery-asset identity as intentionally optional/unproven for V1.5.
-
 ## 2. Telemetry collector is a delivered V1.5 capability
-
-The private collector is no longer a hypothetical or optional deployment item.
 
 V1.5 includes:
 
@@ -73,15 +69,7 @@ Absence or outage of telemetry must never break normal Cognitive OS reasoning. S
 
 Optional diagnostic sharing requires affirmative opt-in. The checkbox must be unchecked by default. Installation consent and telemetry consent are separate decisions.
 
-A supporting host must expose:
-
-- purpose;
-- exact bounded preview;
-- categories collected;
-- categories never collected;
-- retention;
-- privacy notice;
-- ability to decline without feature loss.
+A supporting host must expose purpose, exact bounded preview, categories collected/never collected, retention, privacy notice and ability to decline without feature loss.
 
 No dark-pattern preselection is permitted.
 
@@ -113,7 +101,7 @@ V1.5 closes three product-distribution families:
 
 ### Claude
 
-The repository must contain a valid Claude plugin/marketplace declaration and prove it with the current pinned Claude Code CLI in CI. Find Skills must resolve as an installation dependency where supported.
+The repository must contain a valid Claude plugin/marketplace declaration and prove it with the pinned Claude Code CLI in CI. Find Skills must resolve as an installation dependency where supported.
 
 ### OpenAI
 
@@ -136,7 +124,23 @@ The OpenAI MCP app service may host only narrowly scoped product-supporting oper
 
 No general shell, filesystem, arbitrary HTTP, arbitrary candidate execution or arbitrary installation surface is part of the OpenAI plugin.
 
-## 6. Hermes is a compatibility host, not a product dependency
+## 6. ChatGPT plugin does not require an inference API key
+
+Creating, testing, submitting, approving or installing the ChatGPT/Codex plugin does **not** inherently require an OpenAI inference API key.
+
+The plugin may package a skill and optionally a connected app/MCP surface. ChatGPT/Codex supplies the host model/runtime; the plugin author does not need to buy OpenAI API inference merely because the plugin exists.
+
+The repository retains `.github/workflows/conformance.yml` only as an **optional maintainer QA harness** for explicit remote SUT + independent grader testing when someone intentionally chooses to spend remote API quota. It:
+
+- is not a Plugin Directory requirement;
+- is not a V1.5 release blocker;
+- has no provider/model defaults;
+- never falls back to a local model;
+- may be used later as additional evidence.
+
+This section supersedes prior closure wording that accidentally converted optional remote API conformance into a mandatory plugin/release dependency.
+
+## 7. Hermes is a compatibility host, not a product dependency
 
 Hermes is not part of Cognitive OS and users do not need Hermes to install or use Cognitive OS.
 
@@ -144,11 +148,9 @@ A Hermes E2E is useful compatibility evidence when the Hermes runtime is availab
 
 The same rule applies to host-specific features generally: claims must follow evidence, but one unavailable host cannot become an accidental universal dependency.
 
-## 7. Release claims
+## 8. Release claims
 
-The stable V1.5 core still requires fresh remote behavioral conformance using an explicit remote SUT and independent remote grader, with no local-model fallback and evidence bound to the final candidate.
-
-Host/directory states must be expressed separately:
+Host/directory states are expressed separately:
 
 ```text
 CORE_RELEASED
@@ -161,7 +163,14 @@ PLUGIN_APPROVED/PUBLISHED
 
 A repository can truthfully be `PLUGIN_SUBMISSION_READY` before an external directory finishes review. It may not claim `PLUGIN_APPROVED/PUBLISHED` until the platform reports that state.
 
-## 8. Scope freeze after this amendment
+For ChatGPT specifically:
+
+- use `HOST_E2E_VALIDATED` only after a real host smoke on the actual ChatGPT surface;
+- otherwise use `PLUGIN_SUBMISSION_READY / HOST_SMOKE_PENDING` if package/MCP/submission evidence is complete.
+
+The stable V1.5 core requires truthful deterministic/privacy/distribution evidence and release metadata, not a paid model-API run.
+
+## 9. Scope freeze after this amendment
 
 After the obligations above are implemented, V1.5 accepts only:
 
