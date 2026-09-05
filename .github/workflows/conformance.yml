@@ -11,6 +11,14 @@ on:
         description: "Optional independent grader model"
         required: false
         default: ""
+      profile:
+        description: "Selection profile; final runs all 58 cases"
+        required: false
+        type: choice
+        options:
+          - dev
+          - final
+        default: dev
   push:
     branches:
       - feat/**
@@ -51,13 +59,17 @@ jobs:
           GRADER_MODEL: ${{ inputs.grader_model }}
         run: docker exec ollama ollama pull "$GRADER_MODEL"
 
+      - name: Run deterministic contracts and regression suite
+        run: python -m unittest discover -s tests -v
+
       - name: Run V1.5 behavioral conformance
         env:
           SUT_MODEL: ${{ inputs.sut_model || 'qwen3:4b' }}
           GRADER_MODEL: ${{ inputs.grader_model }}
+          CONFORMANCE_PROFILE: ${{ inputs.profile || 'dev' }}
           COGNITIVE_OS_CANDIDATE_SHA: ${{ github.sha }}
         run: |
-          args=(--suite v1.5 --model "$SUT_MODEL" --out evals/runs/v1.5-conformance.json)
+          args=(--suite v1.5 --profile "$CONFORMANCE_PROFILE" --model "$SUT_MODEL" --workers 1 --out evals/runs/v1.5-conformance.json)
           if test -n "$GRADER_MODEL"; then args+=(--grader-model "$GRADER_MODEL"); fi
           python evals/run_local_conformance.py "${args[@]}"
 
