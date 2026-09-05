@@ -3,13 +3,29 @@
   "target": "claude",
   "source_commit": "UNRELEASED_WORKTREE",
   "package_version": "1.5.0-dev",
-  "included_assets": ["skills/cognitive-os", ".claude-plugin/marketplace.json"],
-  "projected_assets": ["SKILL.md", "references/", "policies/", "schemas/", "VERSION"],
-  "omitted_assets": ["bootstrap/", "telemetry/", "tools/", "evals/", "adapters/"],
+  "included_assets": [
+    "skills/cognitive-os",
+    ".claude-plugin/marketplace.json"
+  ],
+  "projected_assets": [
+    "SKILL.md",
+    "references/",
+    "policies/",
+    "schemas/",
+    "scripts/",
+    "VERSION"
+  ],
+  "omitted_assets": [
+    "bootstrap/",
+    "telemetry/",
+    "tools/",
+    "evals/",
+    "adapters/"
+  ],
   "feature_availability": {
     "cognitive_core": "COMPLETE",
-    "local_capability_discovery": "PARTIAL",
-    "external_capability_discovery": "UNAVAILABLE",
+    "local_capability_discovery": "COMPLETE",
+    "external_capability_discovery": "COMPLETE",
     "grounded_corpus": "PARTIAL",
     "machine_contract_documents": "COMPLETE",
     "machine_contract_runtime_validator": "UNAVAILABLE",
@@ -18,5 +34,5 @@
     "forensic_bundle_runtime": "UNAVAILABLE"
   },
   "schema_enforcement": "PARTIAL",
-  "notes": "The marketplace entry points to the canonical skill and does not create a Claude-specific cognitive copy."
+  "notes": "Claude marketplace installs Cognitive OS with automatic pinned Find Skills dependency; Find MCP ships inside the Cognitive OS skill as a read-only Official MCP Registry client. Telemetry remains unavailable in the Claude package until a host sender and consent surface are implemented and tested."
 }
