@@ -128,6 +128,18 @@ jobs:
             --artifact claude="$RUNNER_TEMP/cognitive-os-distributions/claude" \
             --artifact gemini="$RUNNER_TEMP/cognitive-os-distributions/gemini"
 
+  claude-plugin-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install pinned Claude Code CLI
+        run: npm install --global @anthropic-ai/claude-code@2.1.261
+
+      - name: Validate Claude marketplace and plugin
+        run: claude plugin validate .
+
   notebooklm-adapter-smoke:
     runs-on: ubuntu-latest
     steps:
