@@ -11,7 +11,7 @@
 **Spec:** `docs/specs/2026-09-04-cognitive-os-v1.5-public-final.md`
 
 **Implementation status (2026-09-04):** Gates 0–8 and Gate T pass the evidence
-available on candidate `228046c1ca46a126f472dc0e87e73ad083b1fb77`: V1.4 is
+available on candidate `a51407d4c92ef08689f5a7bd2a0aad43698c9681`: V1.4 is
 `29/29`, the primary V1.5 Gemma/Qwen matrix is `58/58`, and the independent
 Qwen SUT critical-only matrix is `14/14`. Gate 9 remains `BLOCKED` because the
 fresh Hermes run could not prove MCP or account-bound NotebookLM execution;

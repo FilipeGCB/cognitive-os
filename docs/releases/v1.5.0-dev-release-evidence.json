@@ -1,32 +1,32 @@
 {
   "schema_version": "cognitive-os-release-evidence-v1.5",
   "repository": "FilipeGCB/cognitive-os",
-  "candidate_sha": "228046c1ca46a126f472dc0e87e73ad083b1fb77",
+  "candidate_sha": "a51407d4c92ef08689f5a7bd2a0aad43698c9681",
   "version": "1.5.0-dev",
   "source_tree_fingerprint": "877f7959303c30c60f333b5d86ff19a0c2dd2617fb17b2b54fb1cea069691766",
   "manifests": [
     {
       "path": "distribution/manifests/agent-skills.json",
       "sha256": "a40460d5e8a5a87497d383e7b0e5bbd02f796bb46a8c640bab0fa560a3698198",
-      "source_commit": "228046c1ca46a126f472dc0e87e73ad083b1fb77",
+      "source_commit": "a51407d4c92ef08689f5a7bd2a0aad43698c9681",
       "version": "1.5.0-dev"
     },
     {
       "path": "distribution/manifests/openai.json",
       "sha256": "4121617146cc38deb1a51fcfc0ac73bbdd277893d87a41c612587ab6d7cb388d",
-      "source_commit": "228046c1ca46a126f472dc0e87e73ad083b1fb77",
+      "source_commit": "a51407d4c92ef08689f5a7bd2a0aad43698c9681",
       "version": "1.5.0-dev"
     },
     {
       "path": "distribution/manifests/claude.json",
       "sha256": "7a8fb53f214dd3953a88c89f796ee75ff6c387eb5192b3125b2b168ab1f1290d",
-      "source_commit": "228046c1ca46a126f472dc0e87e73ad083b1fb77",
+      "source_commit": "a51407d4c92ef08689f5a7bd2a0aad43698c9681",
       "version": "1.5.0-dev"
     },
     {
       "path": "distribution/manifests/gemini.json",
       "sha256": "b490e20101cf8c26e018c63181c544bdfca28f836fbad98c0a07bdf6ee5396e6",
-      "source_commit": "228046c1ca46a126f472dc0e87e73ad083b1fb77",
+      "source_commit": "a51407d4c92ef08689f5a7bd2a0aad43698c9681",
       "version": "1.5.0-dev"
     }
   ],
@@ -36,10 +36,10 @@
     "schema_version": "cognitive-os-hermes-e2e-v1.5"
   },
   "execution": {
-    "run_id": "CRR-20260905-012851-222DDAC9",
-    "started_at": "2026-09-04T22:28:51-03:00",
-    "finished_at": "2026-09-04T22:30:10-03:00",
-    "candidate_sha": "228046c1ca46a126f472dc0e87e73ad083b1fb77",
+    "run_id": "CRR-20260905-014310-E3CB7365",
+    "started_at": "2026-09-04T22:43:10-03:00",
+    "finished_at": "2026-09-04T22:44:40-03:00",
+    "candidate_sha": "a51407d4c92ef08689f5a7bd2a0aad43698c9681",
     "artifact_refs": [
       "docs/specs/2026-09-04-cognitive-os-v1.5-public-final.md",
       "evals/run_local_conformance.py",
@@ -120,7 +120,7 @@
   },
   "hermes_e2e": {
     "state": "BLOCKED",
-    "evidence_refs": ["docs/evidence/hermes-v1.5-candidate-228046c.md"]
+    "evidence_refs": ["docs/evidence/hermes-v1.5-candidate-a51407d.md"]
   },
   "work": {
     "state": "UNAVAILABLE",

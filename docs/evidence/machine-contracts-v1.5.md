@@ -1,6 +1,6 @@
-# Machine contract evidence — V1.5 candidate `228046c`
+# Machine contract evidence — V1.5 candidate `a51407d`
 
-- candidate SHA: `228046c1ca46a126f472dc0e87e73ad083b1fb77`
+- candidate SHA: `a51407d4c92ef08689f5a7bd2a0aad43698c9681`
 - deterministic test suite: `157/157` passed
 - machine schema validator: `PASS`
 - strict unknown-field, enum, timestamp, run-ID, evidence-ref, state

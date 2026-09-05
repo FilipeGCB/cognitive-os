@@ -94,7 +94,7 @@ critical failures remain blocking.
 
 ## Candidate observation
 
-On candidate `228046c1ca46a126f472dc0e87e73ad083b1fb77`, the revalidation
+On candidate `a51407d4c92ef08689f5a7bd2a0aad43698c9681`, the revalidation
 produced `58/58`, `14/14` critical and `29/29` V1.4 with zero new model calls:
 the reports recorded the corresponding SUT and grade cache hits. A fresh
 single-case grader-change check recorded `sut_calls=0`, `grader_calls=1` and
