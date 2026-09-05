@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Run the public-client portion of Telemetry Gate T.
 
-Gate T proves that the public client can construct, validate, preview and
-refuse unsafe sharing.  It does not make a collector available: a deployment
-must separately provide a private endpoint and re-run the deployment checks.
+Gate T proves that the public client constructs, validates, previews and refuses
+unsafe sharing. A deployed collector may exist, but sharing still remains OFF
+until the host can surface the notice, record explicit consent, preview the
+payload and execute the sender.
 """
 
 from __future__ import annotations
@@ -42,13 +43,16 @@ def run_checks() -> dict[str, str]:
 
     defaults = json.loads((ROOT / "telemetry/defaults.json").read_text(encoding="utf-8"))
     defaults_schema = json.loads((ROOT / "telemetry/defaults.schema.json").read_text(encoding="utf-8"))
-    checks["defaults_schema"] = "PASS" if defaults_schema.get("additionalProperties") is False and set(defaults_schema.get("required", ())) >= {"endpoint", "enabled", "default_mode", "retention"} else "FAIL"
+    required_defaults = {"endpoint", "enabled", "default_mode", "explicit_opt_in_required", "preselected_consent", "policy_version", "retention"}
+    checks["defaults_schema"] = "PASS" if defaults_schema.get("additionalProperties") is False and set(defaults_schema.get("required", ())) >= required_defaults else "FAIL"
     endpoint = defaults.get("endpoint")
     checks["public_default_off"] = "PASS" if defaults.get("enabled") is False and defaults.get("default_mode") == "OFF" else "FAIL"
-    checks["endpoint_public_config"] = "PASS" if endpoint is None or (isinstance(endpoint, str) and endpoint.startswith("https://")) else "FAIL"
+    checks["explicit_opt_in"] = "PASS" if defaults.get("explicit_opt_in_required") is True and defaults.get("preselected_consent") is False else "FAIL"
+    checks["endpoint_public_config"] = "PASS" if isinstance(endpoint, str) and endpoint.startswith("https://") else "FAIL"
+    checks["policy_version"] = "PASS" if defaults.get("policy_version") == "cognitive-os-telemetry-policy-v1.5" else "FAIL"
 
     notice = (ROOT / "docs/telemetry-privacy-notice.md").read_text(encoding="utf-8").lower()
-    notice_terms = ("purpose", "collected", "never", "retention", "revoked", "deletion", "infrastructure", "contact", "limitation")
+    notice_terms = ("purpose", "collected", "never", "retention", "revoked", "deletion", "infrastructure", "contact", "limitation", "explicit opt-in", "does not reduce")
     checks["privacy_notice"] = "PASS" if all(term in notice for term in notice_terms) else "FAIL"
 
     trace = new_usage_trace("1.5.0-dev", "generic", "cli")
@@ -69,17 +73,19 @@ def run_checks() -> dict[str, str]:
     sent: list[object] = []
     client = TelemetryClient(
         mode="SHARE_PRIVACY_PRESERVING_DIAGNOSTICS",
-        endpoint="https://collector.example.invalid/v1/telemetry/events",
+        endpoint=endpoint,
         host_capabilities={"send": True, "preview": True},
-        sender=lambda endpoint, body: sent.append((endpoint, body)),
+        sender=lambda send_endpoint, body: sent.append((send_endpoint, body)),
         sender_enabled=True,
         gate_t_passed=False,
     )
     checks["host_capability_check"] = "PASS" if client.capability_status() == "UNAVAILABLE" else "FAIL"
     checks["consent_state_machine"] = "PASS" if client.send_usage_trace(trace)["state"] == "UNAVAILABLE" else "FAIL"
-    client.request_consent("SHARE_APPROVED")
+    client.request_consent("SHARE_APPROVED", policy_version="cognitive-os-telemetry-policy-v1.5")
     client.preview_usage_trace(trace)
     checks["gate_t_sender_lock"] = "PASS" if client.send_usage_trace(trace)["state"] == "UNAVAILABLE" and not sent else "FAIL"
+    client.request_consent("REVOKED", policy_version="cognitive-os-telemetry-policy-v1.5")
+    checks["revocation_lock"] = "PASS" if client.send_usage_trace(trace)["state"] == "UNAVAILABLE" and not sent else "FAIL"
     checks["dry_run_sender"] = "PASS" if client.dry_run_send(trace)["state"] == "DRY_RUN" and not sent else "FAIL"
 
     checks["adversarial_projection"] = "PASS"
@@ -101,7 +107,8 @@ def main() -> int:
         print(f"{name}: {state}")
     passed = all(state == "PASS" for state in checks.values())
     print(f"GATE T PUBLIC CLIENT: {'PASS' if passed else 'FAIL'}")
-    print("SHARE_PRIVACY_PRESERVING_DIAGNOSTICS: UNAVAILABLE (no collector is enabled by the public repository)")
+    print("COLLECTOR: CONFIGURED")
+    print("SHARING DEFAULT: OFF; explicit opt-in + preview + host sender required")
     return 0 if passed else 1
 
 
