@@ -1,14 +1,20 @@
 # Cognitive OS
 
-> **Think before you spec. Decide before you execute.**
+> **Pense antes de especificar. Decida antes de executar.**
+
+**Uma Agent Skill portátil para amadurecer decisões consequenciais antes da ação — separando evidência de suposição, desafiando a conclusão dominante e identificando a próxima prova útil.**
+
+**EN:** A portable Agent Skill for maturing consequential decisions before acting by separating evidence from assumptions, challenging the leading conclusion, and identifying the next useful proof.
 
 [English](README.md)
 
-Cognitive OS é uma **Agent Skill portátil** para amadurecer decisões antes de ações consequenciais. Ela reconstrói contexto, separa evidência de suposição, escolhe métodos de pesquisa e raciocínio proporcionais ao problema, desafia a conclusão dominante, identifica a próxima prova útil e sabe quando continuar analisando já não vale o custo.
+## Em 10 segundos
 
-Ela **não** é um ciclo de desenvolvimento de software nem um executor autônomo. Uma decisão pode terminar em ação humana, workflow de código, pesquisa adicional, outro agente — ou em nenhuma ação.
+Use o Cognitive OS quando a pergunta importante ainda não é “como eu construo isso?”, mas **“o que eu realmente deveria decidir, e que evidência mudaria essa decisão?”**
 
-> **Versão estável atual:** [`v1.4.0`](https://github.com/FilipeGCB/cognitive-os/releases/tag/v1.4.0). Conformidade comportamental, E2E real de host/capabilities, CI de promoção, CI de `main` e workflow de release passaram antes da publicação.
+Ele reconstrói contexto, escolhe métodos de pesquisa e raciocínio proporcionais, desafia a recomendação e sabe parar quando mais análise provavelmente já não mudará a resposta.
+
+Ele **não** é um ciclo de desenvolvimento de software e não é um executor autônomo. Uma decisão pode terminar em ação humana, workflow de código, pesquisa adicional, outro agente — ou em nenhuma ação.
 
 ## Instalação
 
@@ -26,17 +32,17 @@ Também é possível instalar manualmente copiando:
 skills/cognitive-os/
 ```
 
-para um diretório de skills suportado pelo agente. Notas específicas por host ficam em [`distribution/`](distribution/).
+para um diretório de skills suportado pelo seu agente. Notas específicas por host ficam em [`distribution/`](distribution/).
 
-## Em 60 segundos
+## Uso em 60 segundos
 
 Depois de instalar, converse normalmente com seu agente:
 
 > Quero criar um produto de IA para pequenas empresas. Ajude-me a decidir se a ideia vale a pena antes de eu começar a construir.
 
-Se a ideia estiver ambígua demais para uma análise responsável, o Cognitive OS faz **uma pergunta de alto valor por vez**. Se o problema já estiver claro, ele não executa um ritual de intake desnecessário.
+Se a situação tiver ambiguidade material, o Cognitive OS faz **uma pergunta de alto valor por vez**. Se o problema já estiver claro, ele não impõe um ritual de intake.
 
-Para uma decisão material, a resposta deve se parecer com um bom brief de analista/consultor — não com um despejo de frameworks internos:
+Uma boa saída deve se parecer com um brief conciso de analista/consultor:
 
 ```text
 decisão primeiro
@@ -50,36 +56,36 @@ o que ainda poderia mudá-la
 um próximo movimento claro
 ```
 
-Veja exemplos compactos em [`examples/`](examples/).
+Veja [`examples/`](examples/) para exemplos compactos.
+
+> **Versão estável atual:** [`v1.4.0`](https://github.com/FilipeGCB/cognitive-os/releases/tag/v1.4.0). Conformidade comportamental, E2E real de host/capabilities, CI de promoção, CI de `main` e workflow de release passaram antes da publicação.
 
 ## O que muda com o Cognitive OS
-
-Uma ideia inicial vaga pode amadurecer sem ser soterrada por processo.
 
 | | Ponto de partida | Decisão amadurecida |
 |---|---|---|
 | Problema | Aceitar a solução proposta como se fosse o problema | Reconstruir contexto e formular a decisão real |
 | Verdade | Misturar afirmações plausíveis | Separar evidence, inference, hypothesis, assumption, unknown e contradiction |
 | Pesquisa | Pesquisar porque mais informação parece sempre melhor | Buscar informação apenas quando ela pode mudar materialmente a decisão |
-| Desafio | Listar riscos genéricos | Fechar cada ataque relevante no impacto que ele tem sobre a recomendação |
+| Desafio | Listar riscos genéricos | Fechar cada ataque relevante no impacto sobre a recomendação |
 | Ação | Continuar analisando ou começar a construir | Decidir, testar, esperar, parar, investigar mais — ou deliberadamente não agir |
 
-## Cognitive core
+## Núcleo cognitivo
 
-A skill instalada inclui um conjunto seletivo e adaptativo de métodos:
+A skill inclui um conjunto seletivo e adaptativo de capacidades:
 
-- **Adaptive Discovery Interview** — entrevista apenas quando uma ambiguidade pode mudar materialmente o resultado.
+- **Adaptive Discovery Interview** — entrevista apenas quando a ambiguidade pode mudar materialmente o resultado.
 - **Sensemaking** — identifica que tipo de resposta a situação exige antes de escolher um método.
-- **Evidence discipline** — separa fatos/evidências observados de inferências, assumptions e unknowns.
-- **Outside View** — procura comparáveis/base rates defensáveis quando podem alterar o julgamento; nunca os inventa.
-- **Diagnosis** — usa causal reasoning, bottleneck analysis e first principles quando justificado.
-- **Decision challenge** — aplica trade-offs, red team, premortem, reversibility, second-order effects e kill criteria.
+- **Evidence discipline** — separa fatos/evidências observados de inferência, suposições e unknowns.
+- **Outside View** — procura comparáveis/base rates defensáveis quando podem mudar o julgamento; nunca os inventa.
+- **Diagnosis** — raciocínio causal, análise de gargalos e first principles quando justificado.
+- **Decision challenge** — trade-offs, red team, premortem, reversibility, second-order effects e kill criteria.
 - **Value of Information** — prioriza a menor evidência que realmente vale obter em seguida.
-- **Robustness** — sob incerteza profunda, prefere decisões que sobrevivem a múltiplos futuros plausíveis em vez de probabilidades falsas e precisas.
-- **Decision Quality closure** — verifica framing, alternatives, information, values/trade-offs, reasoning e next action antes de encerrar uma decisão material.
-- **Stop discipline** — sabe quando pesquisa adicional provavelmente não mudará a recomendação.
+- **Robustness** — sob incerteza profunda, prefere decisões que sobrevivem a múltiplos futuros plausíveis em vez de falsa precisão.
+- **Decision Quality closure** — verifica framing, alternativas, informação, valores/trade-offs, reasoning e next action antes de encerrar uma decisão material.
+- **Stop discipline** — sabe quando pesquisa adicional provavelmente já não mudará a recomendação.
 
-Os métodos não são exibidos apenas para provar rigor. O Cognitive OS mostra o que eles ajudaram a descobrir.
+Os métodos não aparecem só para provar rigor. O Cognitive OS mostra o que eles ajudaram a descobrir.
 
 ## Capabilities, não vendor lock-in
 
@@ -105,23 +111,23 @@ NotebookLM é uma implementação de primeira classe de **Grounded Corpus Resear
 
 O adapter comunitário avaliado é [`notebooklm-py`](adapters/notebooklm/), que oferece um caminho CLI/MCP para o NotebookLM. Como exige autenticação Google/NotebookLM e armazena material de autenticação localmente, o Cognitive OS **sempre pede consentimento específico** antes de instalar ou conectar essa capability.
 
-No gate de release da `v1.4.0`, um E2E read-only via Hermes executou com `source_read` observado com sucesso. Ainda assim, NotebookLM continua sendo uma implementação opcional e account-bound — não uma dependência bundled/default nem uma API oficial do Google.
+Um E2E read-only limitado via Hermes observou `source_read` com sucesso, mas NotebookLM continua sendo uma implementação opcional e account-bound — não uma dependência bundled/default nem uma API oficial do Google.
+
+### Alternativas open source para corpus
+
+O Cognitive OS também avalia alternativas locais como OpenNotebookLM, Open Notebook, SurfSense e AnythingLLM. Nenhuma é instalada por padrão. Veja [`docs/capabilities/grounded-corpus-gauntlet.md`](docs/capabilities/grounded-corpus-gauntlet.md).
 
 ## Zero-config quando possível
 
-Para hosts capazes de inspecionar/configurar o próprio ambiente, o Cognitive OS segue este princípio:
-
 > **Zero-config whenever possible. One confirmation when necessary. Explicit consent when consequential.**
 
-O bootstrap planner opcional detecta primeiro o que o host já oferece. Um consentimento único pode permitir instalação sob demanda apenas de componentes leves, locais/user-space, reversíveis, que não exijam conta/secret, não acessem dados persistentes sensíveis, não exponham escrita externa e não façam mudanças privilegiadas.
+O bootstrap planner opcional detecta primeiro o que o host já oferece. Ele pode recomendar instalação sob demanda apenas dentro das restrições de segurança declaradas; mudanças consequenciais — contas externas, credenciais, acesso a dados sensíveis, serviços persistentes, mudanças privilegiadas ou integrações com escrita — exigem consentimento explícito.
 
-Ele **sempre pergunta novamente** antes de Docker/serviços persistentes, downloads grandes, contas externas, API keys/credentials, acesso a dados sensíveis, integrações write-capable, mudanças privilegiadas ou outras consequências materiais.
-
-O bootstrap planner é side-effect-free: retorna uma decisão de instalação e não executa installers de terceiros.
+O bootstrap planner é side-effect-free: ele retorna uma decisão de instalação e não executa installers de terceiros.
 
 ## Artefatos de decisão
 
-Cognitive OS separa três responsabilidades:
+O Cognitive OS mantém três responsabilidades separadas:
 
 ```text
 Decision Pack          verdade estruturada e canônica da decisão
@@ -130,13 +136,13 @@ Decision Pack          verdade estruturada e canônica da decisão
 Cognitive Run Record   evidência observável de auditoria/runtime quando necessária
 ```
 
-Uma conversa normal deve parecer natural e direta. Full Flow/Audit fica disponível quando um gate formal ou um pedido explícito exige evidência do que foi percorrido ou executado, sem persistir chain-of-thought privado.
+Uma conversa normal deve parecer natural e direta. Full Flow/Audit existe quando um gate formal ou pedido explícito exige evidência observável do que foi executado sem persistir chain-of-thought privado.
 
 ## Qualidade de saída também é correção
 
 Uma conclusão correta e difícil de ler é um produto de decisão pior.
 
-A orientação de Decision Brief trata hierarchy, whitespace, density e typography como requisitos funcionais. Markdown é o formato humano portátil. Um renderer HTML opcional e dependency-free produz uma visualização editorial/executive-memo com system fonts, layout responsivo e suporte light/dark:
+Markdown é o formato humano portátil. Um renderer HTML opcional e sem dependências externas produz uma visualização editorial/executive-memo:
 
 ```bash
 python renderers/decision-brief/render.py \
@@ -146,7 +152,7 @@ python renderers/decision-brief/render.py \
 
 ## Runtime truth
 
-Cognitive OS distingue explicitamente:
+O Cognitive OS distingue:
 
 ```text
 availability = AVAILABLE | UNAVAILABLE | UNKNOWN
@@ -154,26 +160,7 @@ invocation   = CALLED | NOT_CALLED
 result       = SUCCESS | PARTIAL | TRUNCATED | RATE_LIMITED | UNAVAILABLE | BLOCKED | FAILED | NOT_APPLICABLE
 ```
 
-Uma capability instalada ou documentada **não significa** que ela foi executada. Execução bem-sucedida só é declarada quando existe evidência de runtime que a sustente.
-
-## Evidência da v1.4.0
-
-A V1.3 privada estabeleceu o baseline comportamental e de auditabilidade a partir do qual o produto público foi derivado. Esses resultados históricos não foram tratados como prova automática da V1.4.
-
-A release pública `v1.4.0` passou:
-
-- suíte comportamental/output de 29 casos com Gemma: **29/29**;
-- cross-grader independente Qwen: **29/29**;
-- zero critical failures;
-- zero grader disagreements;
-- Hermes live capability E2E: **6/6 no mesmo candidate SHA**;
-- H14-E04 Grounded Corpus Research com `source_read` real observado;
-- promotion CI: PASS;
-- downstream `main` CI: PASS;
-- workflow de stable release: PASS;
-- tag e GitHub Release criadas no commit exato verificado.
-
-A fronteira completa da evidência está em [`docs/releases/v1.4.0-release-evidence.md`](docs/releases/v1.4.0-release-evidence.md).
+Uma capability instalada ou documentada **não prova** que ela foi executada. Execução bem-sucedida só é declarada quando existe evidência de runtime que a sustente.
 
 ## Estrutura do repositório
 
@@ -189,13 +176,19 @@ cognitive-os/
 ├── evals/                     # casos comportamentais e validators
 ├── examples/                  # exemplos de Decision Brief
 ├── renderers/                 # camada opcional de apresentação
-├── distribution/              # orientação fina de packaging/discovery por host
+├── distribution/              # orientação de packaging/discovery por host
 ├── tests/                     # testes determinísticos de contrato/regressão
 └── docs/                      # arquitetura, evidências e documentação de release
 ```
 
+## Conformidade e evidência de release
+
+A V1.3 privada estabeleceu o baseline comportamental e de auditabilidade a partir do qual o produto público foi derivado. Esses resultados históricos **não** são prova automática da V1.4.
+
+A release pública `v1.4.0` passou a suíte declarada de 29 casos comportamentais/output com Gemma e cross-grader independente Qwen, com zero critical failures e zero grader disagreements. O E2E de capabilities via Hermes também passou 6/6 em um mesmo candidate SHA. Promotion CI, downstream `main` CI e stable release workflow passaram antes da criação da tag e GitHub Release.
+
+Veja [`docs/releases/v1.4.0-release-evidence.md`](docs/releases/v1.4.0-release-evidence.md) para a fronteira completa da evidência.
+
 ## Licença
 
-Cognitive OS é licenciado sob **Apache License 2.0**. Veja [`LICENSE`](LICENSE).
-
-A `v1.4.0` estável foi publicada somente após o release gate explícito ser satisfeito, o PR de promoção ser mergeado com aprovação do usuário, o CI downstream de `main` passar e o workflow de release verificar o commit-alvo exato.
+Cognitive OS é licenciado sob a **Apache License 2.0**. Veja [`LICENSE`](LICENSE).
