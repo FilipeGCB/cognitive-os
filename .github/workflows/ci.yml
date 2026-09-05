@@ -27,6 +27,9 @@ jobs:
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
 
+      - name: Validate skill references
+        run: python tools/validate_skill_references.py
+
       - name: Validate eval manifests
         run: |
           python evals/validate_cases.py evals/v1.4-core-cases.json
@@ -75,25 +78,51 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Verify skill discovery
-        run: npx -y skills@latest add ./skills --list
+        run: npx -y skills@1.5.23 add ./skills --list
 
       - name: Validate canonical package declaration
         run: python tools/validate_distribution.py
 
       - name: Install for Codex
         run: |
-          npx -y skills@latest add ./skills --skill cognitive-os --agent codex -y --copy
+          npx -y skills@1.5.23 add ./skills --skill cognitive-os --agent codex -y --copy
           test -f .agents/skills/cognitive-os/SKILL.md
+
+      - name: Install mandatory Find Skills for Codex
+        run: |
+          npx -y skills@1.5.23 add https://github.com/vercel-labs/skills --skill find-skills --agent codex -y --copy
+          test -f .agents/skills/find-skills/SKILL.md
+
+      - name: Verify bundled Find MCP client
+        run: |
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, 'bootstrap')
+          from cognitive_os_discovery import MCP_REGISTRY_BASE_URL, MCP_REGISTRY_SERVERS_PATH
+          assert MCP_REGISTRY_BASE_URL == 'https://registry.modelcontextprotocol.io'
+          assert MCP_REGISTRY_SERVERS_PATH == '/v0.1/servers'
+          print('FIND MCP BUNDLE: PASS')
+          PY
 
       - name: Install for Claude Code
         run: |
-          npx -y skills@latest add ./skills --skill cognitive-os --agent claude-code -y --copy
+          npx -y skills@1.5.23 add ./skills --skill cognitive-os --agent claude-code -y --copy
           test -f .claude/skills/cognitive-os/SKILL.md
+
+      - name: Install mandatory Find Skills for Claude Code
+        run: |
+          npx -y skills@1.5.23 add https://github.com/vercel-labs/skills --skill find-skills --agent claude-code -y --copy
+          test -f .claude/skills/find-skills/SKILL.md
 
       - name: Install for Gemini CLI
         run: |
-          npx -y skills@latest add ./skills --skill cognitive-os --agent gemini-cli -y --copy
+          npx -y skills@1.5.23 add ./skills --skill cognitive-os --agent gemini-cli -y --copy
           test -f .agents/skills/cognitive-os/SKILL.md
+
+      - name: Install mandatory Find Skills for Gemini CLI
+        run: |
+          npx -y skills@1.5.23 add https://github.com/vercel-labs/skills --skill find-skills --agent gemini-cli -y --copy
+          test -f .agents/skills/find-skills/SKILL.md
 
       - name: Smoke-test projected distribution artifacts
         run: |
