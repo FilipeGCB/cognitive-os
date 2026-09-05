@@ -2,13 +2,19 @@
 
 > **Think before you spec. Decide before you execute.**
 
+**A portable Agent Skill that helps agents mature consequential decisions before acting — by separating evidence from assumptions, challenging the leading conclusion, and identifying the next useful proof.**
+
+**PT-BR:** Uma Agent Skill portátil para amadurecer decisões antes da execução, separando evidência de suposição, desafiando a conclusão dominante e identificando a próxima prova útil.
+
 [Português (Brasil)](README.pt-BR.md)
 
-Cognitive OS is a portable Agent Skill for maturing decisions before consequential action. It reconstructs context, separates evidence from assumptions, chooses proportional research and reasoning methods, challenges the leading conclusion, identifies the next useful proof, and knows when further analysis is no longer worth its cost.
+## In 10 seconds
 
-It is deliberately **not** a software delivery lifecycle or an autonomous executor. A decision may hand off to a human, a coding workflow, a research process, another agent—or to no action at all.
+Use Cognitive OS when the important question is not yet “how do I build this?” but **“what should I actually decide, and what evidence would change that decision?”**
 
-> **Current stable release:** [`v1.4.0`](https://github.com/FilipeGCB/cognitive-os/releases/tag/v1.4.0). Behavioral conformance, live host/capability E2E, promotion CI, downstream `main` CI, and the stable release workflow all passed before publication.
+It reconstructs context, chooses proportional research/reasoning methods, challenges the recommendation, and stops when more analysis is unlikely to change the answer.
+
+It is **not** a software delivery lifecycle and not an autonomous executor. A decision may hand off to a human, a coding workflow, a research process, another agent — or to no action at all.
 
 ## Install
 
@@ -18,9 +24,9 @@ On Agent Skills-compatible environments supported by the Skills CLI:
 npx skills add FilipeGCB/cognitive-os --skill cognitive-os -g
 ```
 
-`npx` is only an installation transport. **Node.js is not part of the Cognitive OS runtime.** The installed skill is a self-contained directory of instructions, references, policies and schemas.
+`npx` is only the installation transport. **Node.js is not part of the Cognitive OS runtime.** The installed skill is a self-contained directory of instructions, references, policies, and schemas.
 
-You can also install manually by copying:
+Manual installation is also possible by copying:
 
 ```text
 skills/cognitive-os/
@@ -34,9 +40,9 @@ After installation, ask your agent normally:
 
 > I want to build an AI product for small businesses. Help me decide whether the idea is worth pursuing before I start building it.
 
-If the idea is too ambiguous to analyze responsibly, Cognitive OS asks **one high-value question at a time**. If the task is already clear, it does not run an intake ritual.
+If the situation is materially ambiguous, Cognitive OS asks **one high-value question at a time**. If the task is already clear, it does not force an intake ritual.
 
-For a material decision, the result should read like a strong analyst/consultant brief—not a dump of internal frameworks:
+A strong result should read like a concise analyst/consultant brief:
 
 ```text
 decision first
@@ -52,17 +58,17 @@ one clear next move
 
 See [`examples/`](examples/) for compact examples.
 
-## What changes with Cognitive OS
+> **Current stable release:** [`v1.4.0`](https://github.com/FilipeGCB/cognitive-os/releases/tag/v1.4.0). Behavioral conformance, live host/capability E2E, promotion CI, downstream `main` CI, and the stable release workflow passed before publication.
 
-A vague starting idea can mature without being buried in process.
+## What changes with Cognitive OS
 
 | | Starting point | Matured decision |
 |---|---|---|
 | Problem | Accept the proposed solution as the problem | Reconstruct context and formulate the real decision |
-| Truth | Plausible statements blend together | Distinguish evidence, inference, hypothesis, assumption, unknown and contradiction |
+| Truth | Plausible statements blend together | Distinguish evidence, inference, hypothesis, assumption, unknown, and contradiction |
 | Research | Search because more information feels safer | Obtain information only when it can materially change the decision |
 | Challenge | List generic risks | Close each material attack to its impact on the recommendation |
-| Action | Keep analyzing or start building | Decide, test, wait, stop, investigate further—or deliberately do nothing |
+| Action | Keep analyzing or start building | Decide, test, wait, stop, investigate further — or deliberately do nothing |
 
 ## Cognitive core
 
@@ -70,13 +76,13 @@ The installed skill includes a selective, adaptive set of capabilities:
 
 - **Adaptive Discovery Interview** — interview only when ambiguity can materially change the outcome.
 - **Sensemaking** — identify what kind of response the situation requires before choosing a method.
-- **Evidence discipline** — separate observed facts/evidence from inference, assumptions and unknowns.
+- **Evidence discipline** — separate observed facts/evidence from inference, assumptions, and unknowns.
 - **Outside View** — look for defensible comparable outcomes/base rates when they can change the judgment; never invent them.
-- **Diagnosis** — causal reasoning, bottleneck analysis and first principles when justified.
-- **Decision challenge** — trade-offs, red team, premortem, reversibility, second-order effects and kill criteria.
+- **Diagnosis** — causal reasoning, bottleneck analysis, and first principles when justified.
+- **Decision challenge** — trade-offs, red team, premortem, reversibility, second-order effects, and kill criteria.
 - **Value of Information** — prioritize the smallest evidence worth obtaining next.
-- **Robustness** — under deep uncertainty, prefer decisions that survive multiple plausible futures rather than fake precise probabilities.
-- **Decision Quality closure** — check framing, alternatives, information, values/trade-offs, reasoning and next action before closing a material decision.
+- **Robustness** — under deep uncertainty, prefer decisions that survive multiple plausible futures rather than fake precision.
+- **Decision Quality closure** — check framing, alternatives, information, values/trade-offs, reasoning, and next action before closing a material decision.
 - **Stop discipline** — know when additional research is unlikely to change the recommendation.
 
 Methods are not shown merely to prove rigor. Cognitive OS reports what they helped discover.
@@ -103,23 +109,21 @@ The current host maps those needs to tools it actually has. A native capability 
 
 NotebookLM is a first-class **implementation** of Grounded Corpus Research, not a dependency of Cognitive OS.
 
-The evaluated community adapter is [`notebooklm-py`](adapters/notebooklm/), which provides a CLI/MCP path to NotebookLM. Because it requires Google/NotebookLM authentication and stores authentication material locally, Cognitive OS **always asks for specific consent** before installing or connecting it. A bounded read-only Hermes E2E has been observed with successful `source_read`, but NotebookLM remains an optional account-bound candidate implementation rather than a bundled/default dependency or an official Google API.
+The evaluated community adapter is [`notebooklm-py`](adapters/notebooklm/), which provides a CLI/MCP path to NotebookLM. Because it requires Google/NotebookLM authentication and stores authentication material locally, Cognitive OS **always asks for specific consent** before installing or connecting it.
+
+A bounded read-only Hermes E2E has been observed with successful `source_read`, but NotebookLM remains an optional account-bound candidate implementation rather than a bundled/default dependency or an official Google API.
 
 ### Open-source corpus companions
 
-Cognitive OS is also evaluating local alternatives such as OpenNotebookLM, Open Notebook, SurfSense and AnythingLLM. None is currently installed by default. Repository review selected OpenNotebookLM as a future direct integration candidate, but no default will be promoted until direct retrieval/citation and installation tests pass. See [`docs/capabilities/grounded-corpus-gauntlet.md`](docs/capabilities/grounded-corpus-gauntlet.md).
+Cognitive OS is also evaluating local alternatives such as OpenNotebookLM, Open Notebook, SurfSense, and AnythingLLM. None is installed by default. See [`docs/capabilities/grounded-corpus-gauntlet.md`](docs/capabilities/grounded-corpus-gauntlet.md).
 
 ## Zero-config where possible
 
-For hosts that can inspect/configure their environment, Cognitive OS follows this principle:
-
 > **Zero-config whenever possible. One confirmation when necessary. Explicit consent when consequential.**
 
-The optional bootstrap planner first detects what the host already provides. A one-time consent may allow demand-driven installation of approved components only when they are light, local/user-space, reversible, require no account/secret, access no sensitive persistent data, expose no external write, and make no privileged change.
+The optional bootstrap planner detects what the host already provides. It may recommend demand-driven installation only for components that satisfy the declared safety constraints; consequential changes such as external accounts, credentials, sensitive data access, persistent services, privileged changes, or write-capable integrations require explicit consent.
 
-It **always asks again** before Docker/persistent services, large downloads, external accounts, API keys/credentials, sensitive data access, write-capable integrations, privileged changes or other material consequences.
-
-The bootstrap planner itself is side-effect-free; it returns an installation decision and does not execute third-party installers.
+The bootstrap planner itself is side-effect-free: it returns an installation decision and does not execute third-party installers.
 
 ## Decision artifacts
 
@@ -132,19 +136,31 @@ Decision Pack          canonical structured decision truth
 Cognitive Run Record   separate observable audit evidence when needed
 ```
 
-A normal conversation should feel natural and direct. Full Flow/Audit is available when a formal gate or explicit user request requires evidence of what was traversed or executed, without persisting chain-of-thought.
+A normal conversation should feel natural and direct. Full Flow/Audit exists when a formal gate or explicit request needs observable execution evidence without persisting private chain-of-thought.
 
 ## Output quality is part of correctness
 
 A correct conclusion that is hard to read is a worse decision product.
 
-Decision Brief guidance treats hierarchy, whitespace, density and typography as functional requirements. Markdown is the portable human format. An optional dependency-free HTML renderer produces a restrained editorial/executive-memo view with system fonts, responsive layout and light/dark support:
+Markdown is the portable human format. An optional dependency-free HTML renderer produces a restrained editorial/executive-memo view:
 
 ```bash
 python renderers/decision-brief/render.py \
   examples/decision-brief-idea-evolution.md \
   decision.html
 ```
+
+## Runtime truth
+
+Cognitive OS distinguishes:
+
+```text
+availability = AVAILABLE | UNAVAILABLE | UNKNOWN
+invocation   = CALLED | NOT_CALLED
+result       = SUCCESS | PARTIAL | TRUNCATED | RATE_LIMITED | UNAVAILABLE | BLOCKED | FAILED | NOT_APPLICABLE
+```
+
+A capability being installed or documented does **not** prove that it executed. Successful execution is claimed only when runtime evidence supports it.
 
 ## Repository layout
 
@@ -160,31 +176,19 @@ cognitive-os/
 ├── evals/                     # behavioral case definitions and validators
 ├── examples/                  # human-facing Decision Brief examples
 ├── renderers/                 # optional presentation layer
-├── distribution/              # thin host/discovery packaging guidance
+├── distribution/              # host/discovery packaging guidance
 ├── tests/                     # deterministic contract/regression tests
-└── docs/                      # architecture, evidence and release documentation
+└── docs/                      # architecture, evidence, and release documentation
 ```
 
-## Runtime truth
-
-Cognitive OS distinguishes:
-
-```text
-availability = AVAILABLE | UNAVAILABLE | UNKNOWN
-invocation   = CALLED | NOT_CALLED
-result       = SUCCESS | PARTIAL | TRUNCATED | RATE_LIMITED | UNAVAILABLE | BLOCKED | FAILED | NOT_APPLICABLE
-```
-
-A capability that is installed or documented has **not** necessarily executed. Successful execution is claimed only when runtime evidence supports it.
-
-## Conformance
+## Conformance and release evidence
 
 The private predecessor V1.3 established the behavioral and auditability baseline from which this public product was derived. Those historical results do **not** automatically prove V1.4.
 
-The public V1.4 case manifests live under [`evals/`](evals/). The released `v1.4.0` candidate passed the declared 29-case behavioral/output suite with the local Gemma SUT and an independent Qwen cross-grader, with zero critical failures and zero grader disagreements. Live Hermes capability E2E also passed 6/6 on one candidate SHA. Promotion CI, downstream `main` CI, and the stable release workflow subsequently passed before the `v1.4.0` tag and GitHub Release were created. See [`docs/releases/v1.4.0-release-evidence.md`](docs/releases/v1.4.0-release-evidence.md) for the evidence boundary.
+The public `v1.4.0` candidate passed the declared 29-case behavioral/output suite with the local Gemma SUT and an independent Qwen cross-grader, with zero critical failures and zero grader disagreements. Live Hermes capability E2E also passed 6/6 on one candidate SHA. Promotion CI, downstream `main` CI, and the stable release workflow subsequently passed before the tag and GitHub Release were created.
+
+See [`docs/releases/v1.4.0-release-evidence.md`](docs/releases/v1.4.0-release-evidence.md) for the evidence boundary.
 
 ## License
 
 Cognitive OS is licensed under the **Apache License 2.0**. See [`LICENSE`](LICENSE).
-
-Stable `v1.4.0` was published only after the explicit release gate was satisfied, the promotion PR was merged with user approval, downstream `main` CI passed, and the release workflow verified the exact target commit.
