@@ -23,13 +23,33 @@ SCAN_ROOTS = [
     ROOT / "distribution",
     ROOT / "docs" / "capabilities",
     ROOT / "docs" / "releases",
+    ROOT / "docs" / "architecture",
+    ROOT / "docs" / "baselines",
+    ROOT / "docs" / "evidence",
+    ROOT / "docs" / "migration",
+    ROOT / "telemetry",
 ]
-SCAN_FILES = [ROOT / "README.md", ROOT / "CHANGELOG.md", ROOT / "CONTRIBUTING.md"]
+SCAN_FILES = [
+    ROOT / "README.md",
+    ROOT / "README.pt-BR.md",
+    ROOT / "CHANGELOG.md",
+    ROOT / "CONTRIBUTING.md",
+    ROOT / "docs" / "HOST_MATRIX_V1_5.md",
+    ROOT / "docs" / "reproducibility.md",
+    ROOT / "docs" / "telemetry-privacy-notice.md",
+    ROOT / "docs" / "telemetry-collector-contract.md",
+]
 
 PATTERNS = {
     "email address": re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I),
     "Brazilian CPF-like number": re.compile(r"(?<!\d)\d{3}\.\d{3}\.\d{3}-\d{2}(?!\d)"),
-    "Brazilian phone-like number": re.compile(r"(?<!\d)(?:\+?55\s*)?\(?\d{2}\)?\s*9?\d{4}[-\s]?\d{4}(?!\d)"),
+    # Hex digests are public integrity metadata, not phone numbers.  Keeping
+    # hex boundaries here prevents a digest beginning with decimal characters
+    # from producing a false positive while retaining the numeric boundaries
+    # that reject embedded digit sequences.
+    "Brazilian phone-like number": re.compile(
+        r"(?<![0-9A-Fa-f])(?:\+?55\s*)?\(?\d{2}\)?\s*9?\d{4}[-\s]?\d{4}(?![0-9A-Fa-f])"
+    ),
     "home directory path": re.compile(r"/(?:home|Users)/[^/\s]+/"),
 }
 

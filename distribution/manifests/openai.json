@@ -1,0 +1,28 @@
+{
+  "schema_version": "cognitive-os-distribution-manifest-v1.5",
+  "target": "openai",
+  "source_commit": "UNRELEASED_WORKTREE",
+  "package_version": "1.5.0-dev",
+  "included_assets": [
+    "skills/cognitive-os",
+    ".codex-plugin/plugin.json",
+    ".mcp.json",
+    "integrations/chatgpt-plugin",
+    "chatgpt-app-submission.json"
+  ],
+  "projected_assets": ["SKILL.md", "references/", "policies/", "schemas/", "VERSION"],
+  "omitted_assets": ["bootstrap/", "telemetry/", "tools/", "evals/", "adapters/"],
+  "feature_availability": {
+    "cognitive_core": "COMPLETE",
+    "local_capability_discovery": "PARTIAL",
+    "external_capability_discovery": "PARTIAL",
+    "grounded_corpus": "PARTIAL",
+    "machine_contract_documents": "COMPLETE",
+    "machine_contract_runtime_validator": "UNAVAILABLE",
+    "flight_recorder": "PARTIAL",
+    "telemetry_sharing": "PARTIAL",
+    "forensic_bundle_runtime": "UNAVAILABLE"
+  },
+  "schema_enforcement": "PARTIAL",
+  "notes": "The OpenAI package now combines the canonical Cognitive OS skill with a deployed public MCP endpoint and an explicit telemetry-consent UI. MCP protocol handshake, tools/list, Official MCP Registry discovery, telemetry status, and opted-in diagnostic submission have real E2E evidence. ChatGPT Developer Mode host rendering/invocation and public Plugin Directory review remain pending, so host-dependent capabilities stay PARTIAL rather than being overstated as COMPLETE."
+}

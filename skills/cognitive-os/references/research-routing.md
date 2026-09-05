@@ -1,4 +1,4 @@
-# Research Routing — Cognitive OS v1.4
+# Research Routing — Cognitive OS v1.5
 
 Research depth is driven by **decision impact and information value**, not by the availability of an impressive tool.
 
@@ -46,6 +46,15 @@ Use when the need is structured/multi-page collection that ordinary Web Search d
 
 A research tool does not make a weak source authoritative. Prefer primary/current sources for mutable material claims and preserve contradictions.
 
+## Direct routing signals
+
+When a request already states that internal documents and current external
+sources must be reconciled across multiple queries, route to Grounded Corpus
+Research immediately (while retaining separate internal/external evidence).
+Do not ask for the subject, URLs or a corpus inventory before stating that
+route; those details are inputs to the plan, not a reason to hide a determined
+capability route.
+
 ## Stop
 
 Stop research when:
@@ -54,3 +63,40 @@ Stop research when:
 - a next proof/experiment has higher information value;
 - a required capability remains unavailable and further retries have low expected value;
 - the chosen depth budget is exhausted without a justified escalation.
+
+## Web versus grounded corpus
+
+Use Web for open discovery, current facts, new sources, market/regulatory
+signals and freshness. Use a Grounded Corpus for repeated queries over a
+curated corpus, cross-source comparison, contradictions, revisitation,
+internal plus external evidence, context pressure and auditability. NotebookLM
+is an optional host-dependent implementation, not a core dependency or a
+synonym for every large corpus.
+
+In Deep, Board360 and Full Flow, strongly consider corpus migration when
+material sources accumulate, internal and external evidence must be joined,
+queries repeat, compaction/context pressure appears, open discovery converges,
+traceability degrades or a future run will revisit the same corpus. These are
+configurable soft signals, not universal hard thresholds. Reconcile sources
+according to `source-authority.md` before inferring causality.
+
+## Research budget controller
+
+Before a deep run, write the question, subquestions, source classes, expected
+evidence, budgets and stop condition. Track observable counters where the host
+allows it. Check at approximately 50% and 80%, and before a hard limit; reserve
+budget for validation, contradiction checking, challenge, synthesis and
+closure. If a rate limit or hard guardrail is reached:
+
+```text
+freeze search → synthesize evidence already obtained → record limitation/gap
+→ choose fallback or next proof → close the run
+```
+
+Do not claim grounded-corpus use without a runtime source read. If the corpus is
+unavailable, use an authorized composed fallback and preserve the limitation.
+
+When compaction occurs, record a checkpoint that explicitly revisits the
+grounded-corpus choice, source traceability and remaining budget. The
+checkpoint is an observable control point, not permission to silently drop
+provenance.

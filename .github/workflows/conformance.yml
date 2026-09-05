@@ -1,61 +1,119 @@
-name: v1.4-conformance
+name: v1.5-conformance
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/**
-    paths:
-      - 'skills/**'
-      - 'evals/**'
-      - '.github/workflows/conformance.yml'
+    inputs:
+      provider:
+        description: "Explicit remote provider name for the SUT"
+        required: false
+        default: ""
+      base_url:
+        description: "Explicit remote provider base URL"
+        required: false
+        default: ""
+      api_key_env:
+        description: "Environment variable containing the SUT provider credential"
+        required: false
+        default: "CONFORMANCE_API_KEY"
+      sut_model:
+        description: "Explicit remote SUT model"
+        required: false
+        default: ""
+      grader_provider:
+        description: "Explicit independent remote grader provider name"
+        required: false
+        default: ""
+      grader_base_url:
+        description: "Explicit independent remote grader base URL"
+        required: false
+        default: ""
+      grader_api_key_env:
+        description: "Environment variable containing the grader credential"
+        required: false
+        default: "GRADER_API_KEY"
+      grader_model:
+        description: "Explicit independent remote grader model"
+        required: false
+        default: ""
+      profile:
+        description: "Selection profile; final runs all 58 cases"
+        required: false
+        type: choice
+        options:
+          - dev
+          - final
+        default: dev
 
 permissions:
   contents: read
 
 jobs:
-  local-model-conformance:
+  remote-behavioral-conformance:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Start pinned Ollama
-        run: |
-          docker run -d --name ollama -p 11434:11434 ollama/ollama:0.33.2
-          for i in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null; then exit 0; fi
-            sleep 2
-          done
-          docker logs ollama
-          exit 1
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
 
-      - name: Pull conformance model
-        run: docker exec ollama ollama pull qwen3:4b
-
-      - name: Run V1.4 behavioral conformance
+      - name: Run explicit remote behavioral conformance
+        id: conformance
+        env:
+          PROVIDER: ${{ inputs.provider }}
+          BASE_URL: ${{ inputs.base_url }}
+          API_KEY_ENV: ${{ inputs.api_key_env || 'CONFORMANCE_API_KEY' }}
+          SUT_MODEL: ${{ inputs.sut_model }}
+          GRADER_PROVIDER: ${{ inputs.grader_provider }}
+          GRADER_BASE_URL: ${{ inputs.grader_base_url }}
+          GRADER_API_KEY_ENV: ${{ inputs.grader_api_key_env || 'GRADER_API_KEY' }}
+          GRADER_MODEL: ${{ inputs.grader_model }}
+          PROFILE: ${{ inputs.profile || 'dev' }}
+          CONFORMANCE_API_KEY: ${{ secrets.COGNITIVE_OS_CONFORMANCE_API_KEY }}
+          GRADER_API_KEY: ${{ secrets.COGNITIVE_OS_GRADER_API_KEY }}
+          COGNITIVE_OS_CANDIDATE_SHA: ${{ github.sha }}
         run: |
-          python evals/run_local_conformance.py \
-            --model qwen3:4b \
-            --out evals/runs/v1.4-qwen3-4b-conformance.json
+          set -u
+          args=(
+            --suite v1.5
+            --profile "$PROFILE"
+            --provider "$PROVIDER"
+            --base-url "$BASE_URL"
+            --api-key-env "$API_KEY_ENV"
+            --model "$SUT_MODEL"
+            --grader-provider "$GRADER_PROVIDER"
+            --grader-base-url "$GRADER_BASE_URL"
+            --grader-api-key-env "$GRADER_API_KEY_ENV"
+            --grader-model "$GRADER_MODEL"
+            --workers 2
+            --out "$RUNNER_TEMP/v1.5-conformance.json"
+          )
+          python evals/run_conformance.py "${args[@]}"
 
       - name: Publish summary
         if: always()
+        env:
+          REPORT: ${{ runner.temp }}/v1.5-conformance.json
         run: |
-          if test -f evals/runs/v1.4-qwen3-4b-conformance.json; then
-            python - <<'PY'
+          if test -f "$REPORT"; then
+            python - "$REPORT" <<'PY'
           import json
+          import os
+          import sys
           from pathlib import Path
-          p = Path('evals/runs/v1.4-qwen3-4b-conformance.json')
-          d = json.loads(p.read_text())
-          with open(__import__('os').environ['GITHUB_STEP_SUMMARY'], 'a') as f:
-              f.write('# Cognitive OS V1.4 local conformance\n\n')
-              f.write(f"- SUT: `{d['sut_model']}`\n")
-              f.write(f"- Grader: separate invocation of `{d['grader_model']}`\n")
-              f.write(f"- Result: **{d['overall']}**\n")
-              f.write(f"- Score: **{d['pass_count']}/{d['cases']}** (required {d['required_pass_count']})\n")
-              f.write(f"- Critical failures: `{d['critical_failures']}`\n")
+
+          data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as output:
+              output.write("# Cognitive OS V1.5 remote behavioral conformance\n\n")
+              output.write(f"- SUT: `{data.get('sut_provider', 'UNCONFIGURED')}/{data.get('sut_model', 'UNCONFIGURED')}`\n")
+              output.write(f"- Grader: `{data.get('grader_provider', 'UNCONFIGURED')}/{data.get('grader_model', 'UNCONFIGURED')}`\n")
+              output.write(f"- Result: **{data.get('overall', 'UNAVAILABLE')}**\n")
+              output.write(f"- Score: **{data.get('pass_count', 0)}/{data.get('cases', 0)}** (required {data.get('required_pass_count', 0)})\n")
+              output.write(f"- Critical failures: `{data.get('critical_failures', [])}`\n")
+              output.write(f"- Candidate: `{data.get('candidate_sha', 'UNKNOWN')}`\n")
           PY
           fi
 
@@ -63,6 +121,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v1.4-qwen3-4b-conformance
-          path: evals/runs/v1.4-qwen3-4b-conformance.json
+          name: v1.5-conformance
+          path: ${{ runner.temp }}/v1.5-conformance.json
           if-no-files-found: warn

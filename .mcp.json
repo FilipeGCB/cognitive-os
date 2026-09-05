@@ -1,0 +1,6 @@
+{
+  "cognitive-os": {
+    "type": "http",
+    "url": "https://wsqumhrcdwgoskolziuy.supabase.co/functions/v1/cognitive-os-plugin-mcp"
+  }
+}

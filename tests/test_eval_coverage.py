@@ -6,6 +6,16 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class EvalCoverageTests(unittest.TestCase):
+    def test_v15_suite_covers_all_spec_families_and_critical_gates(self):
+        cases = []
+        for name in ["v1.5-cases.json", "v1.5-output-cases.json", "v1.5-distribution-cases.json"]:
+            cases.extend(json.loads((ROOT / "evals" / name).read_text(encoding="utf-8")))
+        families = {tag for case in cases for tag in case["tags"]}
+        self.assertTrue({"CD", "RS", "GS", "SI", "TL", "PR", "HP", "DS", "MC", "RC"} <= families)
+        self.assertGreaterEqual(sum(1 for case in cases if case.get("critical")), 10)
+        ids = [case["id"] for case in cases]
+        self.assertEqual(len(ids), len(set(ids)))
+
     def test_v14_behavioral_suite_covers_required_product_behaviors(self):
         cases = []
         for name in ["v1.4-core-cases.json", "v1.4-output-cases.json"]:

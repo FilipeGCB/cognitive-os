@@ -3,7 +3,7 @@
     "id": "H14-E01",
     "name": "host-capability-discovery",
     "capability": "Capability Discovery",
-    "implementation": "Hermes CLI + Ollama",
+    "implementation": "Hermes CLI + explicit remote provider",
     "mode": "preflight",
     "critical": true,
     "requires_account_approval": false

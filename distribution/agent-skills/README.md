@@ -24,4 +24,4 @@ Copy `skills/cognitive-os/` into a supported user/global or workspace skill dire
 
 Prefer tagged releases for stable installations. Do not make runtime behavior silently follow repository `main`; explicit version upgrades preserve reproducibility and rollback.
 
-During `1.4.0-dev`, users who install directly from the repository are opting into development state rather than a stable release.
+During `1.5.0-dev`, users who install directly from the repository are opting into development state rather than a stable release. The installed artifact must be checked against its V1.5 distribution manifest.

@@ -1,5 +1,6 @@
 ---
 id: CAP-YYYYMMDD-HHMMSS-XXXX
+schema_version: cognitive-os-capability-decision-v1.5
 status: proposed
 capability: <abstract capability>
 source: <repo/url/provider>
@@ -88,3 +89,34 @@ Use `none` only with sufficient evidence.
 ## Evidence / references **[required]**
 
 For mutable external claims, record date/ref/version when material.
+
+## V1.5 machine fields
+
+The Markdown record remains the human-readable contract. The executable companion `capability-decision-record.schema.json` requires these fields and rejects unknown fields:
+
+```yaml
+id: CAP-YYYYMMDD-XXXX
+schema_version: cognitive-os-capability-decision-v1.5
+capability: <abstract capability>
+discovery_class: EXISTING_CAPABILITY | LOCAL_SKILL_DISCOVERY | LOCAL_TOOL_DISCOVERY | LOCAL_CONNECTOR_DISCOVERY | EXTERNAL_SKILL_DISCOVERY | EXTERNAL_MCP_DISCOVERY | MANUAL_FALLBACK
+source_or_adapter: <host or adapter>
+candidate_provenance:
+  source: <bounded source ref>
+  provenance_class: HOST_OBSERVED | TOOL_OBSERVED | REPOSITORY_OBSERVED | USER_SUPPLIED | UNKNOWN
+availability: AVAILABLE | UNAVAILABLE | UNKNOWN
+auth_state: NOT_REQUIRED | REQUIRED_NOT_AUTHENTICATED | AUTHENTICATED | UNKNOWN
+run_consent_state: NOT_REQUIRED | NOT_ASKED | NOT_GRANTED | DECLINED | GRANTED | REVOKED
+invocation: CALLED | NOT_CALLED
+result: SUCCESS | PARTIAL | TRUNCATED | RATE_LIMITED | UNAVAILABLE | BLOCKED | FAILED | NOT_APPLICABLE
+consent_required: true
+adoption_state: DISCOVERED | INSPECTED | REJECTED | TEST_APPROVED | PERSISTENT_ADOPTION_PENDING_CONSENT | APPROVED | QUARANTINED | UNAVAILABLE | BLOCKED
+evidence_refs: [run://...]
+```
+
+`AVAILABLE`, `AUTHENTICATED` and `APPROVED` are not run consent. A capability that requires consent can only be `CALLED` with `run_consent_state: GRANTED`; a successful result requires runtime evidence references. Find Skills/Find MCP are represented as discovery assets and never as the candidate capability they discover.
+
+For a read-only local capability that is available within observed host
+permissions and does not cross an account or sensitive boundary, use
+`run_consent_state: NOT_REQUIRED`; unrelated external-account or installation
+consent must not block that use. This exception does not apply to external,
+account-bound, persistent or consequential capabilities.

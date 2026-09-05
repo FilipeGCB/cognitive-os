@@ -9,7 +9,7 @@ Branch: `feat/v1.4-public-foundation`
 
 Prove that Cognitive OS can run inside a real agent host and interact with real host capabilities without confusing capability selection with capability execution.
 
-The behavioral 29-case suite already proves the cognitive policy on a local model. This E2E gate proves the **hands**: host discovery, live tool invocation, MCP behavior, NotebookLM authentication boundary, prompt-injection resistance at the execution boundary, and visible handling of unavailable capabilities.
+The provider-neutral behavioral suite proves the cognitive policy. This E2E gate proves the **hands**: host discovery, live tool invocation, MCP behavior, NotebookLM authentication boundary, prompt-injection resistance at the execution boundary, and visible handling of unavailable capabilities.
 
 ## Host and isolation
 
@@ -17,17 +17,17 @@ Reference host: Hermes Agent CLI on the maintainer Linux workstation.
 
 The harness uses a dedicated profile named `cognitive-os-e2e` by default. It must not change the active/default profile and must not reuse the main profile's session state.
 
-Profile preparation may clone ordinary local configuration from a chosen source profile so existing provider/web credentials remain usable, but it must not copy session history or state. The harness then overwrites the model configuration to the local Ollama candidate and installs an exact copy of `skills/cognitive-os/` from the checked-out candidate commit into the isolated profile.
+Profile preparation may clone ordinary configuration from a chosen source profile so existing remote provider/web credentials remain usable, but it must not copy session history or state. The harness then overwrites the model configuration to the explicitly supplied remote provider/model and installs an exact copy of `skills/cognitive-os/` from the checked-out candidate commit into the isolated profile. Missing provider configuration is `NOT_EXECUTED`/`UNAVAILABLE`; no local fallback is selected.
 
-Default SUT model:
+Provider configuration:
 
-- model: `gemma4:26b-a4b-it-qat`
-- provider: Hermes `custom`
-- base URL: `http://127.0.0.1:11434/v1`
+- provider/model: supplied explicitly by the remote host configuration
+- provider: the explicitly selected remote provider
+- base URL: the explicitly selected remote HTTP(S) endpoint
 - context length: `65536`
-- Ollama context request: `65536`
+- context request: `65536`
 
-A local-model or Hermes transport failure is evidence and must be recorded as `BLOCKED` or `FAILED`; it must never be silently replaced by a cloud model.
+A remote-provider or Hermes transport failure is evidence and must be recorded as `BLOCKED` or `FAILED`; it must never be silently replaced by another provider.
 
 ## Runtime evidence authority
 
@@ -69,10 +69,10 @@ Observe:
 - profile existence/path;
 - Cognitive OS skill visible in `hermes -p cognitive-os-e2e skills list`;
 - configured MCP list;
-- Ollama model availability;
+- explicit remote provider/model availability;
 - no fallback to a different provider/model.
 
-Pass condition: the isolated profile, exact Skill and local SUT are observable. Individual optional capabilities may remain unavailable but must be recorded accurately.
+Pass condition: the isolated profile, exact Skill and explicitly selected remote SUT are observable. Individual optional capabilities may remain unavailable but must be recorded accurately.
 
 ### H14-E02 — Live Web Search
 
@@ -142,7 +142,7 @@ python3 evals/e2e/run_hermes_e2e.py <command>
 
 Commands:
 
-- `prepare` — create/update the isolated profile, copy the exact Skill, configure local Gemma; no NotebookLM auth.
+- `prepare` — create/update the isolated profile, copy the exact Skill, configure the explicit remote provider/model; no NotebookLM auth.
 - `preflight` — perform read-only environment checks and write minimized JSON evidence.
 - `run-auto` — run the non-account cases that can execute without NotebookLM consent.
 - `notebooklm-check` — read-only NotebookLM CLI/auth/MCP readiness check; requires explicit `--approve-notebooklm-account-use` before touching authenticated account state.

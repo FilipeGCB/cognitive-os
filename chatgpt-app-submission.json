@@ -1,0 +1,128 @@
+{
+  "$schema": "https://developers.openai.com/plugins/schemas/chatgpt-app-submission.v1.json",
+  "schema_version": 1,
+  "app_info": {
+    "display_name": "Cognitive OS",
+    "subtitle": "Decide before you execute",
+    "description": "Cognitive OS helps users mature consequential decisions before acting. Its app tools can discover untrusted MCP candidates from the Official MCP Registry, explain the optional diagnostics policy, show the exact bounded diagnostic before consent, and send that sanitized diagnostic only after explicit opt-in. The cognitive reasoning workflow itself remains in the bundled Cognitive OS skill.",
+    "category": "PRODUCTIVITY"
+  },
+  "tools": {
+    "find_mcp": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only searches the Official MCP Registry and returns bounded candidate metadata without installing, connecting to, or executing any candidate.",
+        "open_world_justification": "Reads public registry metadata but does not create or modify public internet state or third-party records.",
+        "destructive_justification": "Cannot delete, overwrite, revoke, install, execute, or otherwise irreversibly change user or third-party state."
+      }
+    },
+    "telemetry_status": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Returns the fixed Cognitive OS diagnostics defaults, policy version, privacy notice location, and excluded data categories without changing configuration.",
+        "open_world_justification": "Does not write to any public or external system and only reports static product policy metadata.",
+        "destructive_justification": "Cannot delete, overwrite, revoke access, send diagnostics, or perform any irreversible action."
+      }
+    },
+    "render_telemetry_consent": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Renders the exact bounded diagnostic preview and an unchecked consent control without transmitting the diagnostic.",
+        "open_world_justification": "Rendering occurs inside the ChatGPT app surface and does not modify any external or publicly visible state.",
+        "destructive_justification": "Only presents information and a consent choice; it does not send, delete, overwrite, or revoke anything."
+      }
+    },
+    "submit_diagnostic": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Writes one explicitly approved, bounded categorical diagnostic event to the private Cognitive OS telemetry collector.",
+        "open_world_justification": "The write is limited to the private Cognitive OS diagnostics service and does not publish or modify public internet state or an unrelated third-party account.",
+        "destructive_justification": "Adds a diagnostic event but cannot delete, overwrite, revoke access, perform transactions, or make another irreversible user-facing change."
+      }
+    }
+  },
+  "test_cases": [
+    {
+      "description": "Discover MCP candidates for a missing integration capability.",
+      "user_prompt": "Use Cognitive OS to find MCP candidates for read-only filesystem access. Do not install or execute anything.",
+      "file_attachment_urls": null,
+      "tools_triggered": "find_mcp",
+      "expected_output": "Returns bounded candidate metadata from the Official MCP Registry and clearly states that discovery did not install or execute a candidate.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Handle an MCP registry search that may have few or no relevant candidates.",
+      "user_prompt": "Search the Official MCP Registry for an MCP that supports a very specific imaginary capability called zeta-quartz-ledger-sync. Only show candidates if the registry actually returns them.",
+      "file_attachment_urls": null,
+      "tools_triggered": "find_mcp",
+      "expected_output": "Returns only registry-backed candidates or reports that no candidates were found, without inventing or installing anything.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Explain the diagnostics policy before any consent decision.",
+      "user_prompt": "What does Cognitive OS telemetry collect, is it on by default, and what does it never send?",
+      "file_attachment_urls": null,
+      "tools_triggered": "telemetry_status",
+      "expected_output": "States that sharing is OFF by default, requires explicit opt-in, links the privacy notice, and lists the excluded sensitive/free-text categories.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Render the exact diagnostic preview before the user decides whether to share.",
+      "user_prompt": "Show me the Cognitive OS diagnostic consent screen for this bounded run status so I can review exactly what would be sent before deciding.",
+      "file_attachment_urls": null,
+      "tools_triggered": "render_telemetry_consent",
+      "expected_output": "Renders the bounded diagnostic, privacy notice link, and an unchecked consent box; nothing is sent merely by rendering the screen.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Send a sanitized diagnostic only after explicit opt-in.",
+      "user_prompt": "I reviewed the Cognitive OS V1.5 diagnostic preview and explicitly consent to share this sanitized diagnostic now. Use only the bounded runtime categories already shown to me.",
+      "file_attachment_urls": null,
+      "tools_triggered": "submit_diagnostic",
+      "expected_output": "Submits one bounded diagnostic event to the private collector and returns a non-identifying receipt or a non-blocking failure if the collector is unavailable.",
+      "expected_output_url": null
+    }
+  ],
+  "negative_test_cases": [
+    {
+      "description": "Do not trigger for unrelated email work.",
+      "user_prompt": "Send an email to my team summarizing today's meeting.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "The Cognitive OS app should not be invoked because it has no email workflow.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Do not trigger for ordinary document summarization.",
+      "user_prompt": "Summarize the PDF I attached in five bullets.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "The app should not be invoked unless Cognitive OS later identifies a material capability gap that specifically requires one of its tools.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Do not pretend the app can install an arbitrary discovered MCP.",
+      "user_prompt": "Install and execute this unreviewed MCP server on my machine right now.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "The app should not invoke an install or execution action because no such tool exists; discovery never authorizes adoption.",
+      "expected_output_url": null
+    }
+  ]
+}
