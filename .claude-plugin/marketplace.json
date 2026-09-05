@@ -2,25 +2,54 @@
   "name": "cognitive-os",
   "version": "1.5.0-dev",
   "owner": {
-    "name": "FilipeGCB"
+    "name": "FilipeGCB",
+    "url": "https://github.com/FilipeGCB"
   },
-  "description": "Cognitive OS public Agent Skill marketplace",
+  "description": "Cognitive OS decision layer and mandatory capability-discovery bundle for Claude Code.",
   "plugins": [
     {
       "name": "cognitive-os",
+      "displayName": "Cognitive OS",
       "source": "./",
-      "description": "Portable decision layer for maturing decisions before consequential action.",
+      "description": "Portable decision layer for maturing decisions before consequential action, with mandatory Find Skills and bundled Find MCP discovery.",
+      "version": "1.5.0-dev",
       "strict": false,
       "skills": [
         "./skills/cognitive-os"
       ],
+      "dependencies": [
+        "find-skills"
+      ],
       "repository": "https://github.com/FilipeGCB/cognitive-os",
+      "homepage": "https://github.com/FilipeGCB/cognitive-os",
+      "license": "Apache-2.0",
       "keywords": [
         "decision-making",
         "agent-skills",
+        "capability-discovery",
         "research",
         "sensemaking",
         "auditability"
+      ]
+    },
+    {
+      "name": "find-skills",
+      "displayName": "Find Skills",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/vercel-labs/skills.git",
+        "path": "skills/find-skills",
+        "sha": "435076e78988e1e6ec40d00b0b1d76bdbbc5419a"
+      },
+      "description": "Pinned upstream Find Skills discovery dependency required by the Cognitive OS Claude bundle.",
+      "version": "1.5.23",
+      "strict": false,
+      "repository": "https://github.com/vercel-labs/skills",
+      "license": "MIT",
+      "keywords": [
+        "skills",
+        "discovery",
+        "agent-skills"
       ]
     }
   ]
