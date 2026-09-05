@@ -6,11 +6,11 @@ on:
       provider:
         description: "Explicit remote provider name for the SUT"
         required: false
-        default: ""
+        default: "openai"
       base_url:
         description: "Explicit remote provider base URL"
         required: false
-        default: ""
+        default: "https://api.openai.com/v1/chat/completions"
       api_key_env:
         description: "Environment variable containing the SUT provider credential"
         required: false
@@ -18,15 +18,15 @@ on:
       sut_model:
         description: "Explicit remote SUT model"
         required: false
-        default: ""
+        default: "gpt-5.6-terra"
       grader_provider:
         description: "Explicit independent remote grader provider name"
         required: false
-        default: ""
+        default: "google-gemini"
       grader_base_url:
         description: "Explicit independent remote grader base URL"
         required: false
-        default: ""
+        default: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
       grader_api_key_env:
         description: "Environment variable containing the grader credential"
         required: false
@@ -34,7 +34,7 @@ on:
       grader_model:
         description: "Explicit independent remote grader model"
         required: false
-        default: ""
+        default: "gemini-3.7-flash"
       profile:
         description: "Selection profile; final runs all 58 cases"
         required: false
@@ -42,7 +42,7 @@ on:
         options:
           - dev
           - final
-        default: dev
+        default: final
 
 permissions:
   contents: read
@@ -71,7 +71,7 @@ jobs:
           GRADER_BASE_URL: ${{ inputs.grader_base_url }}
           GRADER_API_KEY_ENV: ${{ inputs.grader_api_key_env || 'GRADER_API_KEY' }}
           GRADER_MODEL: ${{ inputs.grader_model }}
-          PROFILE: ${{ inputs.profile || 'dev' }}
+          PROFILE: ${{ inputs.profile || 'final' }}
           CONFORMANCE_API_KEY: ${{ secrets.COGNITIVE_OS_CONFORMANCE_API_KEY }}
           GRADER_API_KEY: ${{ secrets.COGNITIVE_OS_GRADER_API_KEY }}
           COGNITIVE_OS_CANDIDATE_SHA: ${{ github.sha }}
