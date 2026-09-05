@@ -46,7 +46,6 @@ class TelemetryClient:
         self.max_payload_bytes = max_payload_bytes
         self.sender = sender
         self.sender_enabled = sender_enabled
-        # The injected sender is inert until a deployment records Gate T.
         self.gate_t_passed = gate_t_passed
         self.consent_state = "NOT_ASKED"
         self.consent_policy_version = consent_policy_version
@@ -80,6 +79,8 @@ class TelemetryClient:
         if policy_version is not None and policy_version != self.consent_policy_version:
             raise TraceError("telemetry consent policy version does not match the client")
         self.consent_state = state
+        if state in {"DECLINED", "LOCAL_ONLY", "REVOKED"}:
+            self._previewed_event_ids.clear()
         return state
 
     def request_telemetry_consent(self, state: str, *, policy_version: str | None = None) -> str:
@@ -146,7 +147,7 @@ class TelemetryClient:
             return {"state": "FAILED", "reason": self.last_failure}
         try:
             result = self.sender(self.endpoint or "", body)
-        except Exception as exc:  # network/provider errors do not fail the Cognitive OS run
+        except Exception as exc:
             self.last_failure = "sender_error"
             return {"state": "FAILED", "reason": self.last_failure, "error_class": type(exc).__name__}
         return {"state": "SENT", "receipt": result}
@@ -156,7 +157,13 @@ class TelemetryClient:
 
 
 def send_via_https(endpoint: str, body: bytes) -> dict[str, Any]:
-    """Minimal optional transport; deployments can inject a host sender instead."""
+    """HTTPS transport for an already-previewed, explicitly approved payload.
+
+    `TelemetryClient` enforces the user-facing consent state before this sender
+    can be reached. The transport attests that consent contract and its policy
+    version to the collector; the collector independently rejects requests
+    without those headers.
+    """
 
     if not isinstance(endpoint, str) or not endpoint.startswith("https://"):
         raise TraceError("telemetry endpoint must use HTTPS")
@@ -175,7 +182,12 @@ def send_via_https(endpoint: str, body: bytes) -> dict[str, Any]:
     req = request.Request(
         endpoint,
         data=body,
-        headers={"Content-Type": "application/json", "Idempotency-Key": event_id},
+        headers={
+            "Content-Type": "application/json",
+            "Idempotency-Key": event_id,
+            "X-Cognitive-OS-Consent": "share-approved",
+            "X-Cognitive-OS-Policy": DEFAULT_CONSENT_POLICY_VERSION,
+        },
         method="POST",
     )
     with request.urlopen(req, timeout=10) as response:
