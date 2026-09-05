@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SUBMISSION = ROOT / "chatgpt-app-submission.json"
+EXPECTED_SCHEMA = "https://developers.openai.com/plugins/schemas/chatgpt-app-submission.v1.json"
 EXPECTED_TOOLS = {
     "find_mcp",
     "telemetry_status",
@@ -17,7 +18,7 @@ class ChatGPTAppSubmissionTests(unittest.TestCase):
         self.assertTrue(SUBMISSION.is_file(), "chatgpt-app-submission.json must exist")
         data = json.loads(SUBMISSION.read_text(encoding="utf-8"))
         self.assertEqual(data["schema_version"], 1)
-        self.assertEqual(data["$schema"], "https://developers.openai.com/apps-sdk/schemas/chatgpt-app-submission.v1.json")
+        self.assertEqual(data["$schema"], EXPECTED_SCHEMA)
         self.assertEqual(data["app_info"]["display_name"], "Cognitive OS")
         self.assertLessEqual(len(data["app_info"]["subtitle"]), 30)
         self.assertEqual(data["app_info"]["category"], "PRODUCTIVITY")
