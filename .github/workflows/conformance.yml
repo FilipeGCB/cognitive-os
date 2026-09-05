@@ -4,37 +4,37 @@ on:
   workflow_dispatch:
     inputs:
       provider:
-        description: "Explicit remote provider name for the SUT"
+        description: "Optional explicit remote provider name for the SUT"
         required: false
-        default: "openai"
+        default: ""
       base_url:
-        description: "Explicit remote provider base URL"
+        description: "Optional explicit remote provider base URL"
         required: false
-        default: "https://api.openai.com/v1/chat/completions"
+        default: ""
       api_key_env:
-        description: "Environment variable containing the SUT provider credential"
+        description: "Environment variable containing the optional SUT provider credential"
         required: false
         default: "CONFORMANCE_API_KEY"
       sut_model:
-        description: "Explicit remote SUT model"
+        description: "Optional explicit remote SUT model"
         required: false
-        default: "gpt-5.6-terra"
+        default: ""
       grader_provider:
-        description: "Explicit independent remote grader provider name"
+        description: "Optional explicit independent remote grader provider name"
         required: false
-        default: "google-gemini"
+        default: ""
       grader_base_url:
-        description: "Explicit independent remote grader base URL"
+        description: "Optional explicit independent remote grader base URL"
         required: false
-        default: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+        default: ""
       grader_api_key_env:
-        description: "Environment variable containing the grader credential"
+        description: "Environment variable containing the optional grader credential"
         required: false
         default: "GRADER_API_KEY"
       grader_model:
-        description: "Explicit independent remote grader model"
+        description: "Optional explicit independent remote grader model"
         required: false
-        default: "gemini-3.7-flash"
+        default: ""
       profile:
         description: "Selection profile; final runs all 58 cases"
         required: false
@@ -42,7 +42,7 @@ on:
         options:
           - dev
           - final
-        default: final
+        default: dev
 
 permissions:
   contents: read
@@ -60,7 +60,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Run explicit remote behavioral conformance
+      - name: Run optional explicit remote behavioral conformance
         id: conformance
         env:
           PROVIDER: ${{ inputs.provider }}
@@ -71,7 +71,7 @@ jobs:
           GRADER_BASE_URL: ${{ inputs.grader_base_url }}
           GRADER_API_KEY_ENV: ${{ inputs.grader_api_key_env || 'GRADER_API_KEY' }}
           GRADER_MODEL: ${{ inputs.grader_model }}
-          PROFILE: ${{ inputs.profile || 'final' }}
+          PROFILE: ${{ inputs.profile || 'dev' }}
           CONFORMANCE_API_KEY: ${{ secrets.COGNITIVE_OS_CONFORMANCE_API_KEY }}
           GRADER_API_KEY: ${{ secrets.COGNITIVE_OS_GRADER_API_KEY }}
           COGNITIVE_OS_CANDIDATE_SHA: ${{ github.sha }}
@@ -107,13 +107,14 @@ jobs:
 
           data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as output:
-              output.write("# Cognitive OS V1.5 remote behavioral conformance\n\n")
+              output.write("# Cognitive OS V1.5 optional remote behavioral conformance\n\n")
               output.write(f"- SUT: `{data.get('sut_provider', 'UNCONFIGURED')}/{data.get('sut_model', 'UNCONFIGURED')}`\n")
               output.write(f"- Grader: `{data.get('grader_provider', 'UNCONFIGURED')}/{data.get('grader_model', 'UNCONFIGURED')}`\n")
               output.write(f"- Result: **{data.get('overall', 'UNAVAILABLE')}**\n")
               output.write(f"- Score: **{data.get('pass_count', 0)}/{data.get('cases', 0)}** (required {data.get('required_pass_count', 0)})\n")
               output.write(f"- Critical failures: `{data.get('critical_failures', [])}`\n")
               output.write(f"- Candidate: `{data.get('candidate_sha', 'UNKNOWN')}`\n")
+              output.write("- Release note: this paid-API automation is optional and is not required to create/publish the ChatGPT plugin.\n")
           PY
           fi
 
