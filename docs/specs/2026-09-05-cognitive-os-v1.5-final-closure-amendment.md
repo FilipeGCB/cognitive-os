@@ -10,7 +10,35 @@ This amendment records final product decisions made after the 2026-09-04 V1.5 sp
 
 Detailed implementation design: `docs/superpowers/specs/2026-09-05-v1.5-product-closure-distribution-design.md`.
 
-## 1. Find Skills and Find MCP are mandatory concrete discovery capabilities
+Authoritative product-boundary clarification: `docs/architecture/cognitive-os-product-boundary-v1.5.md`.
+
+## 1. Cognitive OS is the product/system; the Agent Skill is its portable cognitive core
+
+Cognitive OS must not be described as if the whole product were only `skills/cognitive-os/`.
+
+The V1.5 architecture is:
+
+```text
+Cognitive OS product/system
+├── portable cognitive core -> Agent Skill
+├── capability layer -> native host capabilities + Find Skills + Find MCP + grounded corpus and other approved capabilities
+├── adapters/integrations -> host adapters, connectors and MCP/app execution surfaces
+├── product services -> privacy-preserving telemetry/improvement queue
+└── distribution -> Agent Skill/local bundle + OpenAI plugin + Claude plugin
+```
+
+A functionality can be a first-class Cognitive OS capability without its implementation living physically inside the skill. The skill owns the portable reasoning, routing, policy, evidence and consent contracts; the host/adapters/MCPs/services supply execution where external or account-bound capability is required.
+
+Examples:
+
+- internet research is Cognitive OS functionality while the network/search implementation may be host-native;
+- Grounded Corpus Research is Cognitive OS functionality while NotebookLM is one first-class adapter/implementation, not a mandatory core dependency;
+- Find MCP may be executed by the bundled read-only client or an equivalent plugin/MCP surface;
+- shared diagnostics are Cognitive OS functionality while collection is performed by the optional external telemetry service.
+
+This is a terminology/product-boundary correction, not a V1.5 feature expansion and not a move to a centralized Cognitive OS SaaS/runtime.
+
+## 2. Find Skills and Find MCP are mandatory concrete discovery capabilities
 
 For V1.5, the approved identities are no longer intentionally abstract/unproven.
 
@@ -41,7 +69,7 @@ This installation-time rule does not authorize any candidate later discovered by
 
 Cloud hosts such as ChatGPT cannot pretend to install software on the user's computer. They must package equivalent discovery behavior in their supported plugin/app surface and declare unavailable local-machine behavior honestly.
 
-## 2. Telemetry collector is a delivered V1.5 capability
+## 3. Telemetry collector is a delivered V1.5 capability
 
 V1.5 includes:
 
@@ -65,7 +93,7 @@ Supabase is a replaceable hosting/storage adapter for this deployed service and 
 
 Absence or outage of telemetry must never break normal Cognitive OS reasoning. Sharing remains optional even though the collector is deployed.
 
-## 3. Consent UX
+## 4. Consent UX
 
 Optional diagnostic sharing requires affirmative opt-in. The checkbox must be unchecked by default. Installation consent and telemetry consent are separate decisions.
 
@@ -73,7 +101,7 @@ A supporting host must expose purpose, exact bounded preview, categories collect
 
 No dark-pattern preselection is permitted.
 
-## 4. Evidence-driven self-improvement
+## 5. Evidence-driven self-improvement
 
 The telemetry improvement loop is part of V1.5, but silent self-mutation is not.
 
@@ -91,13 +119,15 @@ sanitized failure event
 
 `candidate` never authorizes automatic edit, commit, merge, install or deploy.
 
-## 5. Distribution surfaces
+## 6. Distribution surfaces
 
 V1.5 closes three product-distribution families:
 
 1. Agent Skills/local hosts;
 2. Claude plugin packaging;
 3. OpenAI Plugin packaging for ChatGPT/Codex.
+
+The repository is the canonical source of the entire Cognitive OS product, including the portable skill, adapters, integrations, product services and distribution manifests. The user-facing plugin installation may occur inside the target platform; that does not make the plugin's source/versioning cease to live in the repository.
 
 ### Claude
 
@@ -124,7 +154,7 @@ The OpenAI MCP app service may host only narrowly scoped product-supporting oper
 
 No general shell, filesystem, arbitrary HTTP, arbitrary candidate execution or arbitrary installation surface is part of the OpenAI plugin.
 
-## 6. ChatGPT plugin does not require an inference API key
+## 7. ChatGPT plugin does not require an inference API key
 
 Creating, testing, submitting, approving or installing the ChatGPT/Codex plugin does **not** inherently require an OpenAI inference API key.
 
@@ -140,7 +170,7 @@ The repository retains `.github/workflows/conformance.yml` only as an **optional
 
 This section supersedes prior closure wording that accidentally converted optional remote API conformance into a mandatory plugin/release dependency.
 
-## 7. Hermes is a compatibility host, not a product dependency
+## 8. Hermes is a compatibility host, not a product dependency
 
 Hermes is not part of Cognitive OS and users do not need Hermes to install or use Cognitive OS.
 
@@ -148,7 +178,7 @@ A Hermes E2E is useful compatibility evidence when the Hermes runtime is availab
 
 The same rule applies to host-specific features generally: claims must follow evidence, but one unavailable host cannot become an accidental universal dependency.
 
-## 8. Release claims
+## 9. Release claims
 
 Host/directory states are expressed separately:
 
@@ -170,7 +200,7 @@ For ChatGPT specifically:
 
 The stable V1.5 core requires truthful deterministic/privacy/distribution evidence and release metadata, not a paid model-API run.
 
-## 9. Scope freeze after this amendment
+## 10. Scope freeze after this amendment
 
 After the obligations above are implemented, V1.5 accepts only:
 
