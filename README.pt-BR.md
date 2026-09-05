@@ -2,9 +2,9 @@
 
 > **Pense antes de especificar. Decida antes de executar.**
 
-**Uma Agent Skill portátil para amadurecer decisões consequenciais antes da ação — separando evidência de suposição, desafiando a conclusão dominante e identificando a próxima prova útil.**
+**Um produto/sistema host-neutral para amadurecer decisões consequenciais antes da ação. Seu núcleo cognitivo portátil é uma Agent Skill; capacidades externas são resolvidas por ferramentas nativas do host, adapters/MCPs aprovados e serviços opcionais do produto.**
 
-**EN:** A portable Agent Skill for maturing consequential decisions before acting by separating evidence from assumptions, challenging the leading conclusion, and identifying the next useful proof.
+**EN:** A host-neutral product/system for maturing consequential decisions before acting. Its portable cognitive core is an Agent Skill; external capabilities are resolved through host-native tools, approved adapters/MCPs, and optional product services.
 
 [English](README.md)
 
@@ -14,9 +14,40 @@ Use o Cognitive OS quando a pergunta importante ainda não é “como eu constru
 
 Ele reconstrói contexto, escolhe métodos de pesquisa e raciocínio proporcionais, desafia a recomendação e sabe parar quando mais análise provavelmente já não mudará a resposta.
 
-Ele **não** é um ciclo de desenvolvimento de software e não é um executor autônomo. Uma decisão pode terminar em ação humana, workflow de código, pesquisa adicional, outro agente — ou em nenhuma ação.
+O Cognitive OS é um **sistema modular**, não apenas um arquivo `SKILL.md`: a skill carrega o contrato cognitivo portátil; pesquisa na internet, Grounded Corpus/NotebookLM, conectores, MCPs e serviços como telemetria são capabilities do produto executadas pela superfície apropriada de cada host. Ele não é um ciclo de desenvolvimento de software nem exige um runtime SaaS centralizado próprio.
 
 > **Linha de desenvolvimento atual:** `1.5.0-dev`. A última versão estável continua sendo [`v1.4.0`](https://github.com/FilipeGCB/cognitive-os/releases/tag/v1.4.0) até o fechamento dos gates da V1.5.
+
+## Modelo do produto
+
+```text
+COGNITIVE OS — produto/sistema
+│
+├── Cognitive Core
+│   └── Agent Skill portátil
+│
+├── Capability Layer
+│   ├── Web / pesquisa
+│   ├── Find Skills
+│   ├── Find MCP
+│   ├── Grounded Corpus / NotebookLM
+│   └── capabilities nativas/conectadas do host
+│
+├── Adapters / Integrations
+│   └── connectors, MCPs e superfícies account-bound
+│
+├── Product Services
+│   └── telemetria/Flight Recorder + improvement queue
+│
+└── Distribution
+    ├── Agent Skill/local bundle
+    ├── plugin OpenAI ChatGPT/Codex
+    └── plugin Claude
+```
+
+**Funcionalidade do Cognitive OS não significa que o código precise morar fisicamente dentro da skill.** A skill decide quando, por que e sob quais políticas uma capability deve ser usada; o host, adapter, MCP ou serviço fornece a execução real quando necessário.
+
+A definição arquitetural autoritativa está em [`docs/architecture/cognitive-os-product-boundary-v1.5.md`](docs/architecture/cognitive-os-product-boundary-v1.5.md).
 
 ## Instalação
 
@@ -75,7 +106,7 @@ Veja [`examples/`](examples/) para exemplos compactos.
 
 ## Núcleo cognitivo
 
-A skill inclui um conjunto seletivo e adaptativo de capacidades:
+A skill inclui um conjunto seletivo e adaptativo de capacidades cognitivas:
 
 - **Adaptive Discovery Interview** — entrevista apenas quando a ambiguidade pode mudar materialmente o resultado.
 - **Sensemaking** — identifica que tipo de resposta a situação exige antes de escolher um método.
@@ -139,19 +170,21 @@ Instalado ou documentado **não** significa executado. A V1.5 também separa dis
 
 ## Distribuição
 
-O mesmo núcleo cognitivo é empacotado para diferentes famílias de host em [`distribution/`](distribution/). A V1.5 fecha três superfícies de instalação/discovery:
+O mesmo produto é projetado para diferentes famílias de host em [`distribution/`](distribution/). A V1.5 fecha três superfícies de instalação/discovery:
 
-- Agent Skills/hosts locais portáteis;
-- plugin do Claude;
-- plugin do ChatGPT/Codex usando skill mais operações MCP estreitas quando execução remota é necessária.
+- Agent Skills/hosts locais portáteis — o core cognitivo + bundle local aprovado;
+- plugin do Claude — empacota/referencia a skill e dependências apropriadas do host;
+- plugin do ChatGPT/Codex — empacota a skill e operações MCP estreitas quando execução remota é necessária.
+
+O GitHub continua sendo a **fonte canônica/versionada de todo o produto**. Depois da publicação, a experiência de instalação do plugin pode ocorrer dentro do ChatGPT/Codex ou Claude, sem exigir que o usuário final instale manualmente os arquivos do repositório.
 
 Um pacote estar pronto para submissão não significa estar aprovado em um diretório externo; publicação em diretório só é declarada depois da revisão da plataforma.
 
 ## Fronteira verificável da V1.5
 
 - CI de push/PR é determinístico; nenhum LLM local é gate de release;
-- behavioral conformance é um workflow separado com SUT **remoto** e grader remoto independente explícitos;
-- Hermes E2E continua sendo prova real separada do host;
+- behavioral conformance remoto existe como QA adicional explícito, não como requisito de plugin/API paga;
+- Hermes E2E continua sendo prova real separada de um host opcional, não dependência do produto;
 - release evidence é vinculada ao candidate SHA e não pode reutilizar runs históricos como prova de promoção atual.
 
 A evidência histórica V1.4 permanece em [`docs/releases/v1.4.0-release-evidence.md`](docs/releases/v1.4.0-release-evidence.md). O fechamento da V1.5 fica em [`docs/releases/v1.5-final-closure-checklist.md`](docs/releases/v1.5-final-closure-checklist.md).
@@ -162,12 +195,15 @@ A evidência histórica V1.4 permanece em [`docs/releases/v1.4.0-release-evidenc
 cognitive-os/
 ├── skills/cognitive-os/       # núcleo cognitivo portátil
 ├── bootstrap/                 # planner determinístico + fronteira explícita de installer/discovery
-├── adapters/                  # adapters de host/capabilities candidatas
+├── adapters/                  # adapters de host/capabilities
+├── integrations/              # integrações/plugin/MCP externas do produto
 ├── telemetry/                 # cliente/Flight Recorder privacy-preserving
 ├── evals/                     # casos comportamentais e validators
 ├── examples/                  # exemplos de Decision Brief
 ├── renderers/                 # camada opcional de apresentação
 ├── distribution/              # packaging por host/plugin
+├── .codex-plugin/             # metadata do plugin OpenAI
+├── .claude-plugin/            # metadata do plugin Claude
 ├── tests/                     # testes determinísticos de contrato/regressão
 └── docs/                      # arquitetura, evidências, privacidade e release
 ```
