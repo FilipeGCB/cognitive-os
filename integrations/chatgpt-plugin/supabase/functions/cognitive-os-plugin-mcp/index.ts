@@ -6,6 +6,7 @@ const OFFICIAL_MCP_SERVERS = `${OFFICIAL_MCP_REGISTRY}/v0.1/servers`;
 const TELEMETRY_ENDPOINT = "https://wsqumhrcdwgoskolziuy.supabase.co/functions/v1/cognitive-os-telemetry";
 const POLICY_VERSION = "cognitive-os-telemetry-policy-v1.5";
 const PRIVACY_URL = "https://github.com/FilipeGCB/cognitive-os/blob/main/docs/telemetry-privacy-notice.md";
+const TELEMETRY_UI_URI = "ui://cognitive-os/telemetry-consent-v1.html";
 
 const capabilityResult = z.enum([
   "success", "partial", "truncated", "rate_limited", "unavailable", "blocked", "failed", "not_called",
@@ -21,6 +22,165 @@ const feedbackReason = z.enum([
   "INSUFFICIENT_EVIDENCE", "INSUFFICIENT_DEPTH", "CAPABILITY_UNAVAILABLE_OR_INADEQUATE",
   "INSUFFICIENT_CONTEXT", "CLARITY", "OTHER",
 ]).nullable();
+
+const diagnosticCoreSchema = z.object({
+  cognitiveOsVersion: z.string().regex(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/).max(64),
+  hostFamily: z.enum(["chatgpt-work", "codex"]),
+  surfaceClass: z.enum(["work", "work-mobile", "cli", "terminal"]),
+  depth: z.enum(["fast", "normal", "deep", "board360"]),
+  fullFlowAudit: z.boolean(),
+  capabilityEvents: z.object({
+    local_skill_discovery: capabilityResult,
+    local_tool_discovery: capabilityResult,
+    local_connector_discovery: capabilityResult,
+    external_skill_discovery: capabilityResult,
+    external_mcp_discovery: capabilityResult,
+    custom_capability: capabilityResult,
+  }),
+  research: z.object({
+    web_calls_bucket: z.enum(["0", "1-3", "4-10", "11+"]),
+    grounded_corpus: groundingResult,
+    notebooklm: groundingResult,
+    compaction_occurred: z.boolean(),
+  }),
+  failures: z.object({ rate_limited: z.boolean(), provider_failure: z.boolean() }),
+  sideEffects: z.object({ persistent_change: z.boolean() }),
+  feedback: z.object({ helpfulness, reason: feedbackReason }),
+  decisionState,
+  runStatus,
+});
+
+const telemetryConsentHtml = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Cognitive OS diagnostics consent</title>
+  <style>
+    :root { color-scheme: light dark; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 14px; background: transparent; color: CanvasText; }
+    .card { max-width: 680px; margin: 0 auto; border: 1px solid color-mix(in srgb, CanvasText 18%, transparent); border-radius: 18px; padding: 18px; background: color-mix(in srgb, Canvas 96%, CanvasText 4%); box-shadow: 0 10px 28px color-mix(in srgb, CanvasText 8%, transparent); }
+    h1 { font-size: 18px; line-height: 1.25; margin: 0 0 8px; }
+    p { font-size: 14px; line-height: 1.5; margin: 7px 0; }
+    .quiet { opacity: .76; }
+    .good { padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, #2e7d32 10%, Canvas); margin: 12px 0; }
+    details { margin: 12px 0; border-top: 1px solid color-mix(in srgb, CanvasText 14%, transparent); border-bottom: 1px solid color-mix(in srgb, CanvasText 14%, transparent); padding: 10px 0; }
+    summary { cursor: pointer; font-weight: 650; font-size: 14px; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.45; padding: 10px; border-radius: 10px; background: color-mix(in srgb, CanvasText 6%, Canvas); max-height: 220px; overflow: auto; }
+    label { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; font-weight: 600; margin: 14px 0; cursor: pointer; }
+    input[type="checkbox"] { width: 18px; height: 18px; margin-top: 1px; flex: 0 0 auto; }
+    .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    button { appearance: none; border: 0; border-radius: 999px; padding: 10px 16px; font: inherit; font-weight: 700; cursor: pointer; background: CanvasText; color: Canvas; }
+    button:disabled { opacity: .36; cursor: not-allowed; }
+    a { color: LinkText; }
+    #status { font-size: 13px; opacity: .8; }
+  </style>
+</head>
+<body>
+  <section class="card" aria-labelledby="title">
+    <h1 id="title">Help improve Cognitive OS?</h1>
+    <p>Shared diagnostics are <strong>off by default</strong>. You choose whether this one privacy-preserving diagnostic is sent.</p>
+    <p class="good"><strong>No feature loss:</strong> declining does not reduce Cognitive OS functionality.</p>
+    <p class="quiet">Cognitive OS never sends prompts, responses, chain-of-thought, documents, file contents, private paths or URLs, credentials, tokens, cookies, client/project names, PII, or arbitrary free text.</p>
+    <details>
+      <summary>Preview exactly what will be sent</summary>
+      <pre id="preview">Waiting for the bounded diagnostic preview…</pre>
+    </details>
+    <p><a href="${PRIVACY_URL}" target="_blank" rel="noreferrer">Open the privacy notice</a></p>
+    <label>
+      <input id="consent" type="checkbox">
+      <span>I agree to share this sanitized diagnostic under the Cognitive OS V1.5 privacy policy.</span>
+    </label>
+    <div class="actions">
+      <button id="send" type="button" disabled>Share diagnostic</button>
+      <span id="status" role="status" aria-live="polite">Nothing has been sent.</span>
+    </div>
+  </section>
+  <script>
+    const POLICY_VERSION = "cognitive-os-telemetry-policy-v1.5";
+    const consent = document.getElementById("consent");
+    const sendButton = document.getElementById("send");
+    const preview = document.getElementById("preview");
+    const status = document.getElementById("status");
+    let diagnostic = null;
+    let nextId = 100;
+    const pending = new Map();
+
+    function setDiagnostic(value) {
+      if (!value || typeof value !== "object") return;
+      diagnostic = value.diagnostic && typeof value.diagnostic === "object" ? value.diagnostic : value;
+      preview.textContent = JSON.stringify(diagnostic, null, 2);
+    }
+
+    function currentHostOutput() {
+      try {
+        if (window.openai && window.openai.toolOutput) return window.openai.toolOutput;
+      } catch (_) {}
+      return null;
+    }
+
+    function callMcpTool(name, args) {
+      if (window.openai && typeof window.openai.callTool === "function") {
+        return window.openai.callTool(name, args);
+      }
+      const id = nextId++;
+      return new Promise((resolve, reject) => {
+        pending.set(id, { resolve, reject });
+        window.parent.postMessage({
+          jsonrpc: "2.0",
+          id,
+          method: "tools/call",
+          params: { name, arguments: args }
+        }, "*");
+      });
+    }
+
+    window.addEventListener("message", (event) => {
+      const message = event.data;
+      if (!message || message.jsonrpc !== "2.0") return;
+      if (message.id && pending.has(message.id)) {
+        const item = pending.get(message.id);
+        pending.delete(message.id);
+        if (message.error) item.reject(new Error(message.error.message || "tool call failed"));
+        else item.resolve(message.result);
+        return;
+      }
+      if (message.method === "ui/notifications/tool-result" || message.method === "ui/notifications/tool-input") {
+        const params = message.params || {};
+        setDiagnostic(params.structuredContent || params.arguments || params);
+      }
+    });
+
+    consent.addEventListener("change", () => {
+      sendButton.disabled = !consent.checked;
+      status.textContent = consent.checked ? "Ready to share after you click the button." : "Nothing has been sent.";
+    });
+
+    sendButton.addEventListener("click", async () => {
+      if (!consent.checked || !diagnostic) return;
+      sendButton.disabled = true;
+      status.textContent = "Sending sanitized diagnostic…";
+      try {
+        const result = await callMcpTool("submit_diagnostic", {
+          name: "submit_diagnostic",
+          ...diagnostic,
+          consent: true,
+          policyVersion: POLICY_VERSION
+        });
+        status.textContent = result && result.isError ? "Diagnostic was not sent." : "Diagnostic shared. Thank you.";
+      } catch (_) {
+        status.textContent = "Diagnostic was not sent. Cognitive OS continues normally.";
+      } finally {
+        consent.checked = false;
+        sendButton.disabled = true;
+      }
+    });
+
+    setDiagnostic(currentHostOutput());
+  </script>
+</body>
+</html>`;
 
 function safeText(value: unknown, max = 240): string | null {
   if (typeof value !== "string") return null;
@@ -85,6 +245,30 @@ function buildServer() {
       instructions:
         "Cognitive OS reasoning lives in the bundled skill. Use find_mcp only when a material capability gap remains. Discovery never authorizes installation or execution. Shared diagnostics are optional, OFF by default, and require explicit user opt-in for the displayed V1.5 policy.",
     },
+  );
+
+  server.registerResource(
+    "telemetry-consent-widget",
+    TELEMETRY_UI_URI,
+    {
+      title: "Cognitive OS diagnostic consent",
+      description: "Explicit opt-in UI for privacy-preserving Cognitive OS diagnostics.",
+      mimeType: "text/html;profile=mcp-app",
+    },
+    async () => ({
+      contents: [{
+        uri: TELEMETRY_UI_URI,
+        mimeType: "text/html;profile=mcp-app",
+        text: telemetryConsentHtml,
+        _meta: {
+          ui: {
+            prefersBorder: true,
+            csp: { connectDomains: [], resourceDomains: [] },
+          },
+          "openai/widgetDescription": "Shows the exact bounded Cognitive OS diagnostic and asks for explicit opt-in before sending.",
+        },
+      }],
+    }),
   );
 
   server.registerTool(
@@ -195,38 +379,54 @@ function buildServer() {
   );
 
   server.registerTool(
+    "render_telemetry_consent",
+    {
+      title: "Review Cognitive OS diagnostic sharing",
+      description:
+        "Use this to display the exact bounded Cognitive OS diagnostic and let the user explicitly choose whether to share it. Rendering does not send telemetry.",
+      inputSchema: diagnosticCoreSchema,
+      outputSchema: z.object({
+        diagnostic: diagnosticCoreSchema,
+        policyVersion: z.literal("cognitive-os-telemetry-policy-v1.5"),
+        privacyNoticeUrl: z.string(),
+        defaultMode: z.literal("OFF"),
+      }),
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+      },
+      _meta: {
+        ui: { resourceUri: TELEMETRY_UI_URI },
+        "openai/toolInvocation/invoking": "Preparing diagnostic preview…",
+        "openai/toolInvocation/invoked": "Diagnostic preview ready.",
+      },
+    },
+    async (diagnostic) => ({
+      structuredContent: {
+        diagnostic,
+        policyVersion: POLICY_VERSION as "cognitive-os-telemetry-policy-v1.5",
+        privacyNoticeUrl: PRIVACY_URL,
+        defaultMode: "OFF" as const,
+      },
+      content: [{
+        type: "text" as const,
+        text: "Review the diagnostic preview. Sharing remains off unless the user checks the consent box and explicitly sends it.",
+      }],
+      _meta: { ui: { resourceUri: TELEMETRY_UI_URI } },
+    }),
+  );
+
+  server.registerTool(
     "submit_diagnostic",
     {
       title: "Share Cognitive OS diagnostic",
       description:
         "Use this only after the user explicitly opts in to the Cognitive OS V1.5 privacy-preserving diagnostic policy and has been shown what will be sent. Sends only bounded categorical runtime diagnostics; never send conversation or document content.",
-      inputSchema: z.object({
+      inputSchema: diagnosticCoreSchema.extend({
         consent: z.literal(true),
         policyVersion: z.literal("cognitive-os-telemetry-policy-v1.5"),
-        cognitiveOsVersion: z.string().regex(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/).max(64),
-        hostFamily: z.enum(["chatgpt-work", "codex"]),
-        surfaceClass: z.enum(["work", "work-mobile", "cli", "terminal"]),
-        depth: z.enum(["fast", "normal", "deep", "board360"]),
-        fullFlowAudit: z.boolean(),
-        capabilityEvents: z.object({
-          local_skill_discovery: capabilityResult,
-          local_tool_discovery: capabilityResult,
-          local_connector_discovery: capabilityResult,
-          external_skill_discovery: capabilityResult,
-          external_mcp_discovery: capabilityResult,
-          custom_capability: capabilityResult,
-        }),
-        research: z.object({
-          web_calls_bucket: z.enum(["0", "1-3", "4-10", "11+"]),
-          grounded_corpus: groundingResult,
-          notebooklm: groundingResult,
-          compaction_occurred: z.boolean(),
-        }),
-        failures: z.object({ rate_limited: z.boolean(), provider_failure: z.boolean() }),
-        sideEffects: z.object({ persistent_change: z.boolean() }),
-        feedback: z.object({ helpfulness, reason: feedbackReason }),
-        decisionState,
-        runStatus,
       }),
       outputSchema: z.object({
         state: z.enum(["SENT", "FAILED"]),
@@ -300,9 +500,6 @@ function buildServer() {
 const handler = createMcpHandler(buildServer);
 
 Deno.serve(async (request: Request) => {
-  // Supabase's public HTTPS gateway rewrites Host before the Edge Function sees
-  // the request, so host validation belongs at the gateway/TLS boundary rather
-  // than rejecting the internal forwarded value here. Bound request size here.
   const declaredLength = Number(request.headers.get("content-length") || "0");
   if (Number.isFinite(declaredLength) && declaredLength > 64 * 1024) {
     return new Response(JSON.stringify({ error: "request_too_large" }), {
