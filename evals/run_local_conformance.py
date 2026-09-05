@@ -1347,6 +1347,24 @@ def run_grade_selection(
     return results, status, stats, header
 
 
+def phase_model_call_stats(
+    sut_phase_stats: dict[str, int],
+    grade_phase_stats: dict[str, int],
+    *,
+    include_sut_calls: bool = True,
+) -> dict[str, int]:
+    """Report calls made by this invocation, not calls recorded in an input artifact."""
+
+    keys = ("sut_calls", "grader_calls", "sut_cache_hits", "grade_cache_hits", "checkpoint_hits")
+    stats = {
+        key: int((sut_phase_stats if include_sut_calls else {}).get(key, 0))
+        + int(grade_phase_stats.get(key, 0))
+        for key in keys
+    }
+    stats["actual_total"] = stats["sut_calls"] + stats["grader_calls"]
+    return stats
+
+
 def build_report(
     *,
     header: dict[str, object],
@@ -1355,6 +1373,7 @@ def build_report(
     results: list[dict[str, object]],
     status: str,
     stats: dict[str, int],
+    sut_artifact_stats: dict[str, int] | None = None,
 ) -> dict[str, object]:
     passed = sum(1 for result in results if result.get("pass") is True)
     critical_ids = sorted(case["id"] for case in selected_cases if bool(case.get("critical", case["id"] in CRITICAL_IDS)))
@@ -1378,7 +1397,7 @@ def build_report(
     else:
         overall = "PASS" if release_eligible else "FAIL"
     flags = [result.get("flags", {}) for result in results if isinstance(result.get("flags"), dict)]
-    return {
+    report = {
         "schema": RUNNER_SCHEMA,
         "phase": "grade",
         **header,
@@ -1420,6 +1439,9 @@ def build_report(
             "grader_truncated_cases": [str(result["id"]) for result, flag in zip(results, flags) if flag.get("grader_truncated")],
         },
     }
+    if sut_artifact_stats is not None:
+        report["sut_artifact_model_calls"] = dict(sut_artifact_stats)
+    return report
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -1474,6 +1496,7 @@ def main(argv: list[str] | None = None) -> int:
     sut_entries: dict[str, dict[str, object]] = {}
     sut_status = "INCOMPLETE"
     sut_stats = {"sut_calls": 0, "grader_calls": 0, "sut_cache_hits": 0, "grade_cache_hits": 0, "checkpoint_hits": 0}
+    sut_artifact_stats: dict[str, int] | None = None
     if args.phase == "grade":
         sut_document = load_json_object(sut_path)
         if not sut_document or sut_document.get("schema") != SUT_ARTIFACT_SCHEMA:
@@ -1493,7 +1516,12 @@ def main(argv: list[str] | None = None) -> int:
             if isinstance(entry, dict) and isinstance(entry.get("case_id"), str)
         }
         sut_status = str(sut_document.get("status") or "INCOMPLETE")
-        sut_stats = sut_document.get("model_calls", sut_stats) if isinstance(sut_document.get("model_calls"), dict) else sut_stats
+        if isinstance(sut_document.get("model_calls"), dict):
+            sut_artifact_stats = {
+                key: int(sut_document["model_calls"].get(key, 0))
+                for key in ("sut_calls", "grader_calls", "sut_cache_hits", "grade_cache_hits", "checkpoint_hits")
+                if isinstance(sut_document["model_calls"].get(key, 0), int)
+            }
         selector_given = bool(args.case_id or args.tag or args.family or args.critical_only or args.affected_path)
         if selector_given:
             selected_cases, selection = select_cases(
@@ -1573,19 +1601,19 @@ def main(argv: list[str] | None = None) -> int:
         workers=args.workers,
     )
     grade_header["context_window"] = args.context_window
+    current_phase_stats = phase_model_call_stats(
+        sut_stats,
+        grade_stats,
+        include_sut_calls=args.phase != "grade",
+    )
     report = build_report(
         header=grade_header,
         selection=selection,
         selected_cases=selected_cases,
         results=[grade_entries[case["id"]] for case in selected_cases if case["id"] in grade_entries],
         status=grade_status if sut_status == "COMPLETE" else "INCOMPLETE",
-        stats={
-            "sut_calls": sut_stats.get("sut_calls", 0),
-            "grader_calls": grade_stats.get("grader_calls", 0),
-            "sut_cache_hits": sut_stats.get("sut_cache_hits", 0),
-            "grade_cache_hits": grade_stats.get("grade_cache_hits", 0),
-            "checkpoint_hits": sut_stats.get("checkpoint_hits", 0) + grade_stats.get("checkpoint_hits", 0),
-        },
+        stats=current_phase_stats,
+        sut_artifact_stats=sut_artifact_stats,
     )
     atomic_write_json(out, report)
     print(f"CONFORMANCE {report['overall']}: {report['pass_count']}/{report['cases']}; critical_failures={report['critical_failures']}; model_calls={report['model_calls']['actual_total']}")

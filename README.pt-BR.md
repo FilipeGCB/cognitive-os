@@ -105,7 +105,7 @@ NotebookLM é uma implementação de primeira classe de **Grounded Corpus Resear
 
 O adapter comunitário avaliado é [`notebooklm-py`](adapters/notebooklm/), que oferece um caminho CLI/MCP para o NotebookLM. Como exige autenticação Google/NotebookLM e armazena material de autenticação localmente, o Cognitive OS **sempre pede consentimento específico** antes de instalar ou conectar essa capability.
 
-No gate de release da `v1.4.0`, um E2E read-only via Hermes executou com `source_read` observado com sucesso. Ainda assim, NotebookLM continua sendo uma implementação opcional e account-bound — não uma dependência bundled/default nem uma API oficial do Google.
+Na evidência histórica da `v1.4.0`, um E2E read-only via Hermes observou `source_read`. No E2E fresco da V1.5, a capability account-bound não foi acessada por falta de autorização explícita. NotebookLM continua sendo uma implementação opcional — não uma dependência bundled/default nem uma API oficial do Google.
 
 ## Zero-config quando possível
 
@@ -161,6 +161,37 @@ resultado também são estados separados. Discovery não autoriza uma capability
 candidata, e execução efêmera externa continua sujeita aos gates de segurança e
 consentimento. O Flight Recorder opcional começa em `OFF`; o payload
 compartilhado é allowlisted e nunca contém conteúdo da conversa.
+
+## Estado verificável da V1.5
+
+A evidência atual da linha `1.5.0-dev` é explícita sobre seus limites:
+
+- contratos determinísticos, scan público e projeção de distributions: **PASS**;
+- regressão V1.4: **29/29 PASS**;
+- Gemma como SUT principal, com grader independente Qwen: **58/58 PASS**;
+- Qwen como SUT independente nos 14 casos críticos: **14/14 PASS**; o relatório
+  continua `INCOMPLETE` no aggregate porque essa execução é deliberadamente
+  parcial e não substitui a suíte candidata completa de 58 casos;
+- Hermes E2E V1.5 fresco: **BLOCKED**, porque MCP não estava configurado e o
+  caminho account-bound do NotebookLM não foi autorizado;
+- Gate T do cliente público de telemetria: **PASS**, com compartilhamento
+  `UNAVAILABLE` por padrão;
+- fonte do collector privado: implementada separadamente, status de deploy
+  **PARTIAL**, sem endpoint declarado como implantado;
+- ChatGPT Work: **NOT_EXECUTED** neste ambiente; existe procedimento de smoke,
+  não evidência de runtime.
+
+O runner de desenvolvimento seleciona casos determinísticos, afetados e
+críticos; separa execução do SUT de grading; e reserva a suíte completa de 58
+casos para o perfil de candidato. O cache por caso não inclui a identidade do
+grader, permitindo trocar o grader sem chamar o SUT novamente quando o
+fingerprint, caso, modelo e configuração forem os mesmos. Consulte o
+[contrato do runner](docs/evidence/conformance-runner-v1.5.md), o
+[pacote de evidências da V1.5](docs/evidence/), o [registro machine-verifiable de
+release](docs/releases/v1.5.0-dev-release-evidence.json) e a [matriz de hosts](docs/HOST_MATRIX_V1_5.md).
+As afirmações comportamentais estão ligadas ao candidate
+`3e2acaab1c54a20c13fbfe98b7a2322245b0bc24`; esta ainda é uma linha de
+desenvolvimento, não uma release estável.
 
 ## Evidência da v1.4.0
 

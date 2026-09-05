@@ -235,6 +235,16 @@ class ConformanceRunnerTests(unittest.TestCase):
         self.assertEqual(second["cache_producer_candidate_sha"], "a" * 40)
         self.assertEqual(first["response"], second["response"])
 
+    def test_grade_phase_counts_only_current_grader_calls(self):
+        current = runner.phase_model_call_stats(
+            {"sut_calls": 58, "grader_calls": 0, "sut_cache_hits": 0, "grade_cache_hits": 0, "checkpoint_hits": 0},
+            {"sut_calls": 0, "grader_calls": 1, "sut_cache_hits": 0, "grade_cache_hits": 0, "checkpoint_hits": 0},
+            include_sut_calls=False,
+        )
+        self.assertEqual(current["sut_calls"], 0)
+        self.assertEqual(current["grader_calls"], 1)
+        self.assertEqual(current["actual_total"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

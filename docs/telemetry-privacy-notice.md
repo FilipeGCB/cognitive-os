@@ -12,9 +12,10 @@ security posture, audit result or individual execution.
 
 ## Collected when explicitly shared
 
-Only typed, low-cardinality fields are sent: schema/version; host/surface
-category; non-identifying random run ID; depth/audit mode; allowlisted capability
-outcome categories; research and context-compaction buckets; failure booleans;
+Only typed, low-cardinality fields are sent: schema/version; a random
+non-identifying event ID used for idempotency; a non-identifying random run ID;
+host/surface category; depth/audit mode; allowlisted capability outcome
+categories; research and context-compaction buckets; failure booleans;
 persistent-side-effect boolean; closed feedback enums; decision state; and run
 status. Custom capability names are represented as categories.
 
@@ -46,6 +47,3 @@ This notice describes the public client's observable controls. It cannot
 eliminate transient provider or network metadata outside the application
 store, and it does not make an automatic LGPD/GDPR or other legal-compliance
 claim.
-
-This notice documents the product controls and does not make an automatic
-LGPD/GDPR or other legal-compliance claim.

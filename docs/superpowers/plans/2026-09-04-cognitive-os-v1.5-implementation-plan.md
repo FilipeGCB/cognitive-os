@@ -10,6 +10,17 @@
 
 **Spec:** `docs/specs/2026-09-04-cognitive-os-v1.5-public-final.md`
 
+**Implementation status (2026-09-04):** Gates 0–8 and Gate T pass the evidence
+available on candidate `3e2acaab1c54a20c13fbfe98b7a2322245b0bc24`: V1.4 is
+`29/29`, the primary V1.5 Gemma/Qwen matrix is `58/58`, and the independent
+Qwen SUT critical-only matrix is `14/14`. Gate 9 remains `BLOCKED` because the
+fresh Hermes run could not prove MCP or account-bound NotebookLM execution;
+Gate 10 Work is `UNAVAILABLE` in this runtime. The runner explicitly reports
+partial selections as `INCOMPLETE` and keeps the complete 58-case suite as the
+candidate release gate. Gate T passes the public-client controls but sharing
+is `UNAVAILABLE` by default. The private collector is separate, verified
+private and `PARTIAL` because no deployed endpoint is claimed.
+
 ## Global Constraints
 
 - `origin/main` em `41a14aa` é a baseline pública; `v1.4.0` e sua release evidence histórica não serão reescritas.
@@ -57,9 +68,9 @@
 
 - [x] Add RED tests for implicit NotebookLM selection and omitted `H14-E03` aggregate failure.
 - [x] Implement the minimal fail-closed corrections and verify targeted tests.
-- [ ] Add deterministic candidate-SHA/version/artifact checks for release evidence.
-- [ ] Add truncation, invented identity, stale session, mutation and critical-case regressions.
-- [ ] Run the full baseline suite and validate a v1.4 evidence record against the new verifier.
+- [x] Add deterministic candidate-SHA/version/artifact checks for release evidence.
+- [x] Add truncation, invented identity, stale session, mutation and critical-case regressions.
+- [x] Run the full baseline suite and validate a v1.4 evidence record against the new verifier.
 
 ### Task 3: Executable state and record contracts
 
@@ -81,10 +92,10 @@
 - `validate_forensic_manifest(record)`
 - `validate_evidence_ref(ref)`
 
-- [ ] Write RED tests for required fields, enums, unknown fields, timestamp/run-ID provenance and invalid state combinations.
-- [ ] Implement deterministic validators and strict JSON schemas.
-- [ ] Keep Markdown as human contract and make schema links/cross-references explicit.
-- [ ] Verify `AVAILABLE + AUTHENTICATED + NOT_GRANTED + NOT_CALLED` cannot become execution.
+- [x] Write RED tests for required fields, enums, unknown fields, timestamp/run-ID provenance and invalid state combinations.
+- [x] Implement deterministic validators and strict JSON schemas.
+- [x] Keep Markdown as human contract and make schema links/cross-references explicit.
+- [x] Verify `AVAILABLE + AUTHENTICATED + NOT_GRANTED + NOT_CALLED` cannot become execution.
 
 ### Task 4: Capability Discovery 2.0 and consent/security policy
 
@@ -104,10 +115,10 @@
 - `DiscoveryDecision`: shortlist/provenance/gauntlet/consent/fallback
 - `classify_ephemeral_execution(candidate)`
 
-- [ ] Add RED cases CD-01 through CD-10, including candidate separation and ephemeral execution.
-- [ ] Extend the existing adapter registry rather than creating a parallel discovery registry.
-- [ ] Record Find Skills/Find MCP assets only when identity, origin, pin, license and mechanism are evidenced; mark unproved assets `BLOCKED`.
-- [ ] Enforce no install/connect/auth/write without applicable consent and no account-bound use without run consent.
+- [x] Add RED cases CD-01 through CD-10, including candidate separation and ephemeral execution.
+- [x] Extend the existing adapter registry rather than creating a parallel discovery registry.
+- [x] Record Find Skills/Find MCP assets only when identity, origin, pin, license and mechanism are evidenced; mark unproved assets `BLOCKED`.
+- [x] Enforce no install/connect/auth/write without applicable consent and no account-bound use without run consent.
 
 ### Task 5: Grounded research, source reconciliation and closure
 
@@ -125,11 +136,11 @@
 - `close_after_research_limit(observable_state)`
 - `build_truth_domain_map()`
 
-- [ ] Add RED cases RS-01 through RS-07 and GS-01 through GS-03.
-- [ ] Implement Web-versus-Corpus routing, soft configurable migration signals and NotebookLM optionality.
-- [ ] Implement 50/80% checkpoints, reserved closure budget and `RATE_LIMITED`/`BLOCKED` synthesis.
-- [ ] Add explicit truth-domain mapping and reconcile-before-causal-inference semantics.
-- [ ] Preserve simple-task behavior and avoid mandatory corpus/tool calls.
+- [x] Add RED cases RS-01 through RS-07 and GS-01 through GS-03.
+- [x] Implement Web-versus-Corpus routing, soft configurable migration signals and NotebookLM optionality.
+- [x] Implement 50/80% checkpoints, reserved closure budget and `RATE_LIMITED`/`BLOCKED` synthesis.
+- [x] Add explicit truth-domain mapping and reconcile-before-causal-inference semantics.
+- [x] Preserve simple-task behavior and avoid mandatory corpus/tool calls.
 
 ### Task 6: Self-improvement, mutations and persistent side effects
 
@@ -146,10 +157,10 @@
 - `close_methodology_drift(snapshot, observed_mutation)`
 - `classify_side_effect(before, after, event)`
 
-- [ ] Add SI-01 through SI-03 failing tests.
-- [ ] Implement run-scoped version/hash pinning, staged validation, broken-reference rejection and honest host limitations.
-- [ ] Distinguish all mutation/side-effect types, including file/config/credential/connection changes.
-- [ ] Add scoped filesystem/git/config/registry observation where host evidence allows it.
+- [x] Add SI-01 through SI-03 failing tests.
+- [x] Implement run-scoped version/hash pinning, staged validation, broken-reference rejection and honest host limitations.
+- [x] Distinguish all mutation/side-effect types, including file/config/credential/connection changes.
+- [x] Add scoped filesystem/git/config/registry observation where host evidence allows it.
 
 ### Task 7: Flight Recorder, privacy modes and forensic bundle
 
@@ -174,11 +185,11 @@
 - `TelemetryClient.persist/preview/request_consent/send`
 - `collect_forensic_bundle(run_id, window, allowlisted_sources)`
 
-- [ ] Add RED adversarial tests for every prohibited shared-data class.
-- [ ] Implement construct-by-allowlist, strict schema, size limits, cardinality buckets and `OFF|LOCAL_DIAGNOSTICS|SHARE_PRIVACY_PRESERVING_DIAGNOSTICS`.
-- [ ] Keep local trace more detailed than shared projection without content or free text.
-- [ ] Implement consent lifecycle, preview, host capability checks and no-backend fallback.
-- [ ] Implement bounded forensic manifest with explicit opt-in and raw conversation excluded.
+- [x] Add RED adversarial tests for every prohibited shared-data class.
+- [x] Implement construct-by-allowlist, strict schema, size limits, cardinality buckets and `OFF|LOCAL_DIAGNOSTICS|SHARE_PRIVACY_PRESERVING_DIAGNOSTICS`.
+- [x] Keep local trace more detailed than shared projection without content or free text.
+- [x] Implement consent lifecycle, preview, host capability checks and no-backend fallback.
+- [x] Implement bounded forensic manifest with explicit opt-in and raw conversation excluded.
 
 ### Task 8: Distribution contract and evals
 
@@ -196,10 +207,10 @@
 - `DistributionManifest(target, source_commit, package_version, included_assets, projected_assets, omitted_assets, feature_availability, schema_enforcement)`
 - `validate_installed_artifact(path, manifest)`
 
-- [ ] Add manifests for Agent Skills/OpenAI/Claude/Gemini with honest COMPLETE/PARTIAL/UNAVAILABLE fields.
-- [ ] Pin critical CI/tool inputs where compatibility is established and disclose mutable inputs.
-- [ ] Add all CD/RS/GS/SI/TL/PR/HP/DS/MC/RC families and V1.4 regressions.
-- [ ] Smoke test copied/installed artifacts and verify references, schema projections and version/hash.
+- [x] Add manifests for Agent Skills/OpenAI/Claude/Gemini with honest COMPLETE/PARTIAL/UNAVAILABLE fields.
+- [x] Pin critical CI/tool inputs where compatibility is established and disclose mutable inputs.
+- [x] Add all CD/RS/GS/SI/TL/PR/HP/DS/MC/RC families and V1.4 regressions.
+- [x] Smoke test copied/installed artifacts and verify references, schema projections and version/hash.
 
 ### Task 9: Multi-model, Hermes and Work evidence
 
@@ -215,10 +226,10 @@
 - conformance report fields: `candidate_sha`, `source_fingerprint`, `sut_model`, `grader_model`, `grader_independent`, `truncation`, `invented_identity`, `critical_failures`.
 - E2E records bind `run_id`, `started_at`, `correlation_marker`, `candidate_sha` and observed artifacts.
 
-- [ ] Add deterministic local grader checks and critical-gate 100% reduction.
-- [ ] Run at least two relevant local models where available; report model-specific results.
-- [ ] Run Hermes only with explicit non-account-bound selection or approved NotebookLM checkpoint; do not use untracked stale sessions.
-- [ ] Produce Work smoke procedure if Work runtime is unavailable; label it `NOT_EXECUTED`.
+- [x] Add deterministic local grader checks and critical-gate 100% reduction.
+- [x] Run at least two relevant local models where available; report model-specific results.
+- [x] Run Hermes only with explicit non-account-bound selection or approved NotebookLM checkpoint; do not use untracked stale sessions. The aggregate remains `BLOCKED` on the fresh run, with MCP and account-bound access recorded as `NOT_CALLED`/`UNKNOWN` rather than simulated success.
+- [x] Produce Work smoke procedure because Work runtime is unavailable; label it `NOT_EXECUTED`.
 
 ### Task 10: Gate T, collector decision, final evidence and handoff
 
@@ -235,10 +246,10 @@
 - release evidence validator consumes exact candidate SHA and all manifest/schema/eval/harness artifacts.
 - collector status is `READY|PARTIAL|BLOCKED|UNAVAILABLE`; core remains independent.
 
-- [ ] Run full regression, public scan, schema/package/distribution checks and release evidence verifier.
-- [ ] Execute Gate T checklist; keep sharing `UNAVAILABLE` if any item lacks proof.
-- [ ] Verify any collector repository is private before creating or writing it; otherwise stop collector work and document blocker.
-- [ ] Produce migration notes, known limitations, exact candidate SHA and PR draft; do not merge or publish release.
+- [x] Run full regression, public scan, schema/package/distribution checks and release evidence verifier against the exact candidate.
+- [x] Execute Gate T checklist; keep sharing `UNAVAILABLE` because no public endpoint/host sender is enabled.
+- [x] Verify the separate collector repository is private before creating or writing it; no public endpoint is claimed.
+- [x] Produce migration notes, known limitations, exact candidate SHA and PR draft; do not merge or publish release.
 
 ## Verification matrix
 

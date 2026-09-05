@@ -103,7 +103,7 @@ The current host maps those needs to tools it actually has. A native capability 
 
 NotebookLM is a first-class **implementation** of Grounded Corpus Research, not a dependency of Cognitive OS.
 
-The evaluated community adapter is [`notebooklm-py`](adapters/notebooklm/), which provides a CLI/MCP path to NotebookLM. Because it requires Google/NotebookLM authentication and stores authentication material locally, Cognitive OS **always asks for specific consent** before installing or connecting it. A bounded read-only Hermes E2E has been observed with successful `source_read`, but NotebookLM remains an optional account-bound candidate implementation rather than a bundled/default dependency or an official Google API.
+The evaluated community adapter is [`notebooklm-py`](adapters/notebooklm/), which provides a CLI/MCP path to NotebookLM. Because it requires Google/NotebookLM authentication and stores authentication material locally, Cognitive OS **always asks for specific consent** before installing or connecting it. A historical V1.4 read-only run observed `source_read`; the current V1.5 Hermes run did not access the account-bound capability. NotebookLM remains an optional candidate implementation rather than a bundled/default dependency or an official Google API.
 
 ### Open-source corpus companions
 
@@ -182,6 +182,32 @@ result. Discovery does not authorize a candidate, and ephemeral external
 execution is still subject to the security/consent gate. The optional Flight
 Recorder defaults to `OFF`; its shared payload is strictly allowlisted and
 contains operational categories, never conversation content.
+
+The V1.5 development evidence is explicit about its current boundary:
+
+- deterministic contracts, public scan and distribution projection: PASS;
+- V1.4 regression conformance: **29/29 PASS**;
+- V1.5 primary Gemma SUT with independent Qwen grader: **58/58 PASS**;
+- independent Qwen SUT evidence on the 14 critical cases: **14/14 PASS**;
+  its report remains `INCOMPLETE` globally because it is intentionally not a
+  substitute for the complete 58-case candidate suite;
+- fresh Hermes V1.5 E2E: `BLOCKED` because MCP was not configured and the
+  account-bound NotebookLM path was not authorized;
+- public telemetry Gate T: `PASS`, with sharing still `UNAVAILABLE` by default;
+- private collector source: implemented separately, with deployment status
+  `PARTIAL` and no endpoint claimed as deployed;
+- ChatGPT Work: `NOT_EXECUTED` in this environment; its exact smoke procedure
+  is documented rather than presented as runtime evidence.
+
+The development runner selects deterministic, affected and critical cases by
+default, separates SUT execution from grading, and reserves the complete
+58-case suite for the candidate profile. Per-case SUT cache keys exclude the
+grader identity, so a grader change can reuse an observed SUT response without
+calling the SUT again. See the [runner contract](docs/evidence/conformance-runner-v1.5.md),
+the [V1.5 evidence pack](docs/evidence/), the [machine release-evidence record](docs/releases/v1.5.0-dev-release-evidence.json),
+and the [host matrix](docs/HOST_MATRIX_V1_5.md). These records bind behavioral
+claims to candidate `3e2acaab1c54a20c13fbfe98b7a2322245b0bc24`; this remains a
+development candidate and is not a stable release.
 
 ## Conformance
 
