@@ -67,7 +67,7 @@ jobs:
           test -s /tmp/decision-brief.html
 
       - name: Python compile check
-        run: python -m compileall -q bootstrap evals renderers telemetry tests tools
+        run: python -m compileall -q bootstrap evals renderers telemetry tests tools skills/cognitive-os/scripts
 
   install-smoke:
     runs-on: ubuntu-latest
@@ -87,27 +87,20 @@ jobs:
         run: |
           npx -y skills@1.5.23 add ./skills --skill cognitive-os --agent codex -y --copy
           test -f .agents/skills/cognitive-os/SKILL.md
+          test -f .agents/skills/cognitive-os/scripts/find_mcp.py
+          python .agents/skills/cognitive-os/scripts/find_mcp.py --self-check | grep '"state": "READY"'
 
       - name: Install mandatory Find Skills for Codex
         run: |
           npx -y skills@1.5.23 add https://github.com/vercel-labs/skills --skill find-skills --agent codex -y --copy
           test -f .agents/skills/find-skills/SKILL.md
 
-      - name: Verify bundled Find MCP client
-        run: |
-          python - <<'PY'
-          import sys
-          sys.path.insert(0, 'bootstrap')
-          from cognitive_os_discovery import MCP_REGISTRY_BASE_URL, MCP_REGISTRY_SERVERS_PATH
-          assert MCP_REGISTRY_BASE_URL == 'https://registry.modelcontextprotocol.io'
-          assert MCP_REGISTRY_SERVERS_PATH == '/v0.1/servers'
-          print('FIND MCP BUNDLE: PASS')
-          PY
-
       - name: Install for Claude Code
         run: |
           npx -y skills@1.5.23 add ./skills --skill cognitive-os --agent claude-code -y --copy
           test -f .claude/skills/cognitive-os/SKILL.md
+          test -f .claude/skills/cognitive-os/scripts/find_mcp.py
+          python .claude/skills/cognitive-os/scripts/find_mcp.py --self-check | grep '"state": "READY"'
 
       - name: Install mandatory Find Skills for Claude Code
         run: |
@@ -118,6 +111,8 @@ jobs:
         run: |
           npx -y skills@1.5.23 add ./skills --skill cognitive-os --agent gemini-cli -y --copy
           test -f .agents/skills/cognitive-os/SKILL.md
+          test -f .agents/skills/cognitive-os/scripts/find_mcp.py
+          python .agents/skills/cognitive-os/scripts/find_mcp.py --self-check | grep '"state": "READY"'
 
       - name: Install mandatory Find Skills for Gemini CLI
         run: |
