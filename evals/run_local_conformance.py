@@ -990,6 +990,7 @@ def sut_header(
     eval_hash: str,
     model: str,
     model_identity: dict[str, object],
+    context_window: int,
 ) -> dict[str, object]:
     return {
         "suite": suite,
@@ -1028,6 +1029,7 @@ def run_sut_selection(
         eval_hash=eval_hash,
         model=model,
         model_identity=model_identity,
+        context_window=context_window,
     )
     checkpoint_expected = {key: header[key] for key in header}
     entries = checkpoint_entries(checkpoint_path, checkpoint_expected, SUT_ARTIFACT_SCHEMA)
