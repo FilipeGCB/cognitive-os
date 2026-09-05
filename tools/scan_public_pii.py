@@ -43,7 +43,13 @@ SCAN_FILES = [
 PATTERNS = {
     "email address": re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I),
     "Brazilian CPF-like number": re.compile(r"(?<!\d)\d{3}\.\d{3}\.\d{3}-\d{2}(?!\d)"),
-    "Brazilian phone-like number": re.compile(r"(?<!\d)(?:\+?55\s*)?\(?\d{2}\)?\s*9?\d{4}[-\s]?\d{4}(?!\d)"),
+    # Hex digests are public integrity metadata, not phone numbers.  Keeping
+    # hex boundaries here prevents a digest beginning with decimal characters
+    # from producing a false positive while retaining the numeric boundaries
+    # that reject embedded digit sequences.
+    "Brazilian phone-like number": re.compile(
+        r"(?<![0-9A-Fa-f])(?:\+?55\s*)?\(?\d{2}\)?\s*9?\d{4}[-\s]?\d{4}(?![0-9A-Fa-f])"
+    ),
     "home directory path": re.compile(r"/(?:home|Users)/[^/\s]+/"),
 }
 
