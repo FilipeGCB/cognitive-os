@@ -140,12 +140,43 @@ class CapabilityDiscoveryTests(unittest.TestCase):
         self.assertEqual(plan.invocation, "NOT_CALLED")
         self.assertFalse(plan.execution_allowed)
 
-    def test_registry_records_unproven_discovery_assets_as_blocked(self):
+    def test_registry_records_canonical_discovery_assets_as_approved(self):
         registry = json.loads((ROOT / "adapters" / "registry.json").read_text(encoding="utf-8"))
-        assets = registry["discovery_assets"]
-        self.assertEqual({asset["status"] for asset in assets}, {"BLOCKED"})
-        self.assertTrue(all(asset["identity_status"] == "UNPROVEN" for asset in assets))
-        self.assertTrue(all(asset["source"] is None for asset in assets))
+        assets = {asset["id"]: asset for asset in registry["discovery_assets"]}
+        self.assertEqual(set(assets), {"find-skills-vercel", "find-mcp-official-registry"})
+
+        find_skills = assets["find-skills-vercel"]
+        self.assertEqual(find_skills["asset_type"], "EXTERNAL_SKILL_DISCOVERY")
+        self.assertEqual(find_skills["source"], "https://github.com/vercel-labs/skills")
+        self.assertEqual(find_skills["repository"], "vercel-labs/skills")
+        self.assertEqual(find_skills["version"], "v1.5.23")
+        self.assertEqual(find_skills["license"], "MIT")
+        self.assertEqual(find_skills["status"], "APPROVED")
+        self.assertEqual(find_skills["identity_status"], "PROVEN")
+        self.assertTrue(find_skills["mechanism"])
+
+        find_mcp = assets["find-mcp-official-registry"]
+        self.assertEqual(find_mcp["asset_type"], "EXTERNAL_MCP_DISCOVERY")
+        self.assertEqual(find_mcp["source"], "https://registry.modelcontextprotocol.io")
+        self.assertEqual(find_mcp["repository"], "modelcontextprotocol/registry")
+        self.assertEqual(find_mcp["version"], "v1.7.9")
+        self.assertIn(find_mcp["license"], {"Apache-2.0/MIT", "Apache-2.0 + MIT"})
+        self.assertEqual(find_mcp["status"], "APPROVED")
+        self.assertEqual(find_mcp["identity_status"], "PROVEN")
+        self.assertTrue(find_mcp["mechanism"])
+
+    def test_registry_assets_are_usable_by_planner(self):
+        registry = json.loads((ROOT / "adapters" / "registry.json").read_text(encoding="utf-8"))
+        assets = tuple(DiscoveryAsset(**{
+            key: value
+            for key, value in raw.items()
+            if key in DiscoveryAsset.__dataclass_fields__
+        }) for raw in registry["discovery_assets"])
+        state = CapabilityState("Unknown capability", "UNAVAILABLE", "NOT_REQUIRED", "NOT_REQUIRED", "NOT_CALLED", None)
+        plan = plan_discovery("Unknown capability", state, external_assets=assets)
+        self.assertEqual(plan.action, "RUN_EXTERNAL_DISCOVERY")
+        self.assertEqual(plan.external_availability, "AVAILABLE")
+        self.assertIn(plan.external_asset_id, {"find-skills-vercel", "find-mcp-official-registry"})
 
     def test_pipeline_triages_candidate_without_executing_it(self):
         asset = DiscoveryAsset(
