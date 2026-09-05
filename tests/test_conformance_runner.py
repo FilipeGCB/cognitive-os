@@ -1,13 +1,14 @@
 import importlib.util
+import json
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNNER_PATH = ROOT / "evals" / "run_local_conformance.py"
+RUNNER_PATH = ROOT / "evals" / "run_conformance.py"
 
-spec = importlib.util.spec_from_file_location("run_local_conformance", RUNNER_PATH)
+spec = importlib.util.spec_from_file_location("run_conformance", RUNNER_PATH)
 runner = importlib.util.module_from_spec(spec)
 assert spec.loader is not None
 spec.loader.exec_module(runner)
@@ -19,9 +20,9 @@ class ConformanceRunnerTests(unittest.TestCase):
         return runner.load_cases([ROOT / "evals" / "v1.5-cases.json", ROOT / "evals" / "v1.5-output-cases.json"])
 
     def test_audit_cases_get_enough_generation_budget_for_observable_ledgers(self):
-        self.assertGreaterEqual(runner.response_num_predict_for([]), 1000)
-        self.assertGreaterEqual(runner.response_num_predict_for(["audit"]), 2800)
-        self.assertGreaterEqual(runner.response_num_predict_for(["audit-preserved"]), 2800)
+        self.assertGreaterEqual(runner.response_max_tokens_for([]), 1000)
+        self.assertGreaterEqual(runner.response_max_tokens_for(["audit"]), 2800)
+        self.assertGreaterEqual(runner.response_max_tokens_for(["audit-preserved"]), 2800)
 
     def test_grader_contract_does_not_confuse_observable_audit_ledgers_with_chain_of_thought(self):
         prompt = runner.grader_system_prompt(["audit", "no-chain-of-thought"]).lower()
@@ -116,7 +117,7 @@ class ConformanceRunnerTests(unittest.TestCase):
             "eval_hash": "eval-hash",
             "skill_fingerprint": "skill-hash",
             "candidate": "a" * 40,
-            "model_identity": {"provider": "ollama", "name": "gemma4:26b", "digest": "d" * 64, "observed": True},
+            "model_identity": {"provider": "remote", "name": "model-a", "digest": "d" * 64, "observed": True},
             "config": runner.request_config(case, 16384, kind="sut"),
         }
         descriptor = runner.case_cache_descriptor(**common)
@@ -132,7 +133,7 @@ class ConformanceRunnerTests(unittest.TestCase):
                 eval_hash="eval-hash",
                 skill_fingerprint="skill-hash",
                 candidate="a" * 40,
-                grader_identity={"provider": "ollama", "name": "qwen3:27b", "digest": "q" * 64, "observed": True},
+                grader_identity={"provider": "remote", "name": "model-b", "digest": "q" * 64, "observed": True},
                 config=runner.request_config(case, 16384, kind="grader"),
             )["sut_cache_key"],
             "",
@@ -142,27 +143,27 @@ class ConformanceRunnerTests(unittest.TestCase):
         case = self.cases()[0]
         sut = runner.case_cache_descriptor(
             suite="v1.5", case=case, eval_hash="e", skill_fingerprint="s", candidate="a" * 40,
-            model_identity={"provider": "ollama", "name": "gemma", "digest": "g" * 64, "observed": True},
+            model_identity={"provider": "remote", "name": "model-a", "digest": "g" * 64, "observed": True},
             config=runner.request_config(case, 16384, kind="sut"),
         )
         grade_a = runner.grade_cache_descriptor(
             suite="v1.5", case=case, sut_entry={**sut, "response": "same"}, eval_hash="e", skill_fingerprint="s", candidate="a" * 40,
-            grader_identity={"provider": "ollama", "name": "qwen", "digest": "q" * 64, "observed": True},
+            grader_identity={"provider": "remote", "name": "model-b", "digest": "q" * 64, "observed": True},
             config=runner.request_config(case, 16384, kind="grader"),
         )
         grade_b = runner.grade_cache_descriptor(
             suite="v1.5", case=case, sut_entry={**sut, "response": "same"}, eval_hash="e", skill_fingerprint="s", candidate="a" * 40,
-            grader_identity={"provider": "ollama", "name": "gemma", "digest": "g" * 64, "observed": True},
+            grader_identity={"provider": "remote", "name": "model-a", "digest": "g" * 64, "observed": True},
             config=runner.request_config(case, 16384, kind="grader"),
         )
         self.assertEqual(sut["cache_key"], runner.case_cache_descriptor(
             suite="v1.5", case=case, eval_hash="e", skill_fingerprint="s", candidate="a" * 40,
-            model_identity={"provider": "ollama", "name": "gemma", "digest": "g" * 64, "observed": True},
+            model_identity={"provider": "remote", "name": "model-a", "digest": "g" * 64, "observed": True},
             config=runner.request_config(case, 16384, kind="sut"),
         )["cache_key"])
         self.assertEqual(sut["cache_key"], runner.case_cache_descriptor(
             suite="v1.5", case=case, eval_hash="e", skill_fingerprint="s", candidate="b" * 40,
-            model_identity={"provider": "ollama", "name": "gemma", "digest": "g" * 64, "observed": True},
+            model_identity={"provider": "remote", "name": "model-a", "digest": "g" * 64, "observed": True},
             config=runner.request_config(case, 16384, kind="sut"),
         )["cache_key"])
         self.assertNotEqual(grade_a["cache_key"], grade_b["cache_key"])
@@ -170,7 +171,7 @@ class ConformanceRunnerTests(unittest.TestCase):
             grade_a["cache_key"],
             runner.grade_cache_descriptor(
                 suite="v1.5", case=case, sut_entry={**sut, "response": "different"}, eval_hash="e", skill_fingerprint="s", candidate="a" * 40,
-                grader_identity={"provider": "ollama", "name": "qwen", "digest": "q" * 64, "observed": True},
+                grader_identity={"provider": "remote", "name": "model-b", "digest": "q" * 64, "observed": True},
                 config=runner.request_config(case, 16384, kind="grader"),
             )["cache_key"],
         )
@@ -210,19 +211,26 @@ class ConformanceRunnerTests(unittest.TestCase):
 
     def test_matching_sut_request_is_reused_after_runner_candidate_changes(self):
         case = self.cases()[0]
-        identity = {"provider": "ollama", "name": "gemma", "digest": "g" * 64, "observed": True}
-        with tempfile.TemporaryDirectory() as directory, patch.object(
-            runner,
-            "ollama_chat",
-            return_value=("observable response", {"done_reason": "stop", "eval_count": 10}),
-        ) as chat:
+        identity = {"provider": "remote", "name": "model-a", "digest": "g" * 64, "observed": True}
+
+        class FakeProvider:
+            provider_name = "remote"
+            status = "AVAILABLE"
+
+            def chat(self, model, messages, *, config):
+                del model, messages, config
+                self.calls = getattr(self, "calls", 0) + 1
+                return "observable response", {"done_reason": "stop", "usage": {"completion_tokens": 10}}
+
+        provider = FakeProvider()
+        with tempfile.TemporaryDirectory() as directory:
             first, first_hit, first_calls = runner.execute_sut_case(
-                "http://unused/api/chat", "gemma", case, suite="v1.5", eval_hash="bundle-a",
+                provider, "model-a", case, suite="v1.5", eval_hash="bundle-a",
                 skill_fingerprint="skill", candidate="a" * 40, context_window=16384,
                 model_identity=identity, cache_dir=Path(directory), cache_enabled=True,
             )
             second, second_hit, second_calls = runner.execute_sut_case(
-                "http://unused/api/chat", "gemma", case, suite="v1.5", eval_hash="bundle-b",
+                provider, "model-a", case, suite="v1.5", eval_hash="bundle-b",
                 skill_fingerprint="skill", candidate="b" * 40, context_window=16384,
                 model_identity=identity, cache_dir=Path(directory), cache_enabled=True,
             )
@@ -230,7 +238,7 @@ class ConformanceRunnerTests(unittest.TestCase):
         self.assertEqual(first_calls, 1)
         self.assertTrue(second_hit)
         self.assertEqual(second_calls, 0)
-        self.assertEqual(chat.call_count, 1)
+        self.assertEqual(provider.calls, 1)
         self.assertEqual(second["candidate_sha"], "b" * 40)
         self.assertEqual(second["cache_producer_candidate_sha"], "a" * 40)
         self.assertEqual(first["response"], second["response"])
@@ -244,6 +252,102 @@ class ConformanceRunnerTests(unittest.TestCase):
         self.assertEqual(current["sut_calls"], 0)
         self.assertEqual(current["grader_calls"], 1)
         self.assertEqual(current["actual_total"], 1)
+
+    def test_missing_provider_is_unavailable_and_has_no_implicit_transport(self):
+        provider = runner.build_provider(provider_name=None, base_url=None, api_key=None)
+
+        self.assertFalse(provider.configured)
+        self.assertEqual(provider.status, "UNAVAILABLE")
+        self.assertFalse(provider.observe_identity("remote-model")["observed"])
+        with self.assertRaises(runner.ProviderUnavailable):
+            provider.chat("remote-model", [], config={})
+
+    def test_loopback_or_local_provider_is_rejected_without_fallback(self):
+        with self.assertRaises(ValueError):
+            runner.build_provider(provider_name="ollama", base_url="http://remote.invalid/v1", api_key="secret")
+        with self.assertRaises(ValueError):
+            runner.build_provider(provider_name="remote", base_url="http://127.0.0.1:11434/v1", api_key="secret")
+
+    def test_remote_provider_uses_provider_neutral_chat_contract(self):
+        class FakeResponse:
+            def __init__(self, body):
+                self.body = json.dumps(body).encode("utf-8")
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self):
+                return self.body
+
+        provider = runner.build_provider(
+            provider_name="remote-test",
+            base_url="https://provider.example/v1",
+            api_key="secret",
+        )
+        with patch.object(runner.urllib.request, "urlopen", return_value=FakeResponse({
+            "id": "chat-1",
+            "model": "remote-model",
+            "system_fingerprint": "fp-1",
+            "choices": [{"message": {"content": "observable answer"}, "finish_reason": "stop"}],
+        })) as request:
+            response, metadata = provider.chat(
+                "remote-model",
+                [{"role": "user", "content": "hello"}],
+                config={"temperature": 0, "max_tokens": 120, "context_window": 4096},
+            )
+
+        request_object = request.call_args.args[0]
+        payload = json.loads(request_object.data.decode("utf-8"))
+        self.assertEqual(response, "observable answer")
+        self.assertEqual(payload["model"], "remote-model")
+        self.assertEqual(payload["max_tokens"], 120)
+        self.assertNotIn("num_ctx", payload)
+        self.assertNotIn("think", payload)
+        self.assertEqual(request_object.headers["Authorization"], "Bearer secret")
+        self.assertEqual(metadata["model"], "remote-model")
+
+    def test_report_with_unobserved_provider_identity_cannot_be_release_pass(self):
+        case = next(case for case in self.cases() if case["id"] == "MC-01")
+        report = runner.build_report(
+            header={
+                "suite": "v1.5",
+                "grader_independent": True,
+                "sut_model_identity": {"provider": "remote", "observed": False},
+                "grader_model_identity": {"provider": "remote", "observed": False},
+            },
+            selection={
+                "selection_complete": True,
+                "critical_coverage_complete": True,
+                "available_case_count": 58,
+            },
+            selected_cases=[case],
+            results=[{"id": "MC-01", "pass": True, "critical": True, "flags": {}}],
+            status="COMPLETE",
+            stats={},
+        )
+        self.assertEqual(report["overall"], "FAIL")
+        self.assertFalse(report["release_gate_eligible"])
+
+    def test_main_without_provider_writes_unavailable_without_transport_calls(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "report.json"
+            exit_code = runner.main([
+                "--suite", "v1.5",
+                "--profile", "dev",
+                "--case-id", "MC-01",
+                "--base-ref", "HEAD",
+                "--out", str(output),
+            ])
+            report = json.loads(output.read_text(encoding="utf-8"))
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(report["status"], "NOT_EXECUTED")
+        self.assertEqual(report["overall"], "UNAVAILABLE")
+        self.assertEqual(report["model_calls"]["actual_total"], 0)
+        self.assertIsNone(report["provider_configuration"]["fallback"])
 
 
 if __name__ == "__main__":

@@ -162,55 +162,31 @@ candidata, e execução efêmera externa continua sujeita aos gates de seguranç
 consentimento. O Flight Recorder opcional começa em `OFF`; o payload
 compartilhado é allowlisted e nunca contém conteúdo da conversa.
 
-## Estado verificável da V1.5
+## Fronteira verificável da V1.5
 
-A evidência atual da linha `1.5.0-dev` é explícita sobre seus limites:
+- o CI de push/PR é determinístico: contratos, scan público, distribuição,
+  install smoke e estrutura de release evidence, sem inferência de modelo;
+- behavioral conformance é um workflow manual separado, com provider remoto,
+  SUT/grader e evidência vinculados ao candidate explicitamente configurados;
+- Hermes E2E é uma prova separada de capability do host;
+- release só pode alegar behavioral `PASS` com a suíte final completa de 58
+  casos, identidades observadas de SUT/grader e validator estrito.
 
-- contratos determinísticos, scan público e projeção de distributions: **PASS**;
-- regressão V1.4: **29/29 PASS**;
-- Gemma como SUT principal, com grader independente Qwen: **58/58 PASS**;
-- Qwen como SUT independente nos 14 casos críticos: **14/14 PASS**; o relatório
-  continua `INCOMPLETE` no aggregate porque essa execução é deliberadamente
-  parcial e não substitui a suíte candidata completa de 58 casos;
-- Hermes E2E V1.5 fresco: **BLOCKED**, porque MCP não estava configurado e o
-  caminho account-bound do NotebookLM não foi autorizado;
-- Gate T do cliente público de telemetria: **PASS**, com compartilhamento
-  `UNAVAILABLE` por padrão;
-- fonte do collector privado: implementada separadamente, status de deploy
-  **PARTIAL**, sem endpoint declarado como implantado;
-- ChatGPT Work: **NOT_EXECUTED** neste ambiente; existe procedimento de smoke,
-  não evidência de runtime.
-
-O runner de desenvolvimento seleciona casos determinísticos, afetados e
-críticos; separa execução do SUT de grading; e reserva a suíte completa de 58
-casos para o perfil de candidato. O cache por caso não inclui a identidade do
-grader, permitindo trocar o grader sem chamar o SUT novamente quando o
-fingerprint, caso, modelo e configuração forem os mesmos. Consulte o
-[contrato do runner](docs/evidence/conformance-runner-v1.5.md), o
-[pacote de evidências da V1.5](docs/evidence/), o [registro machine-verifiable de
-release](docs/releases/v1.5.0-dev-release-evidence.json) e a [matriz de hosts](docs/HOST_MATRIX_V1_5.md).
-As afirmações comportamentais estão ligadas ao candidate
-`a51407d4c92ef08689f5a7bd2a0aad43698c9681`; esta ainda é uma linha de
-desenvolvimento, não uma release estável.
+Os relatórios Gemma/Qwen/Ollama e artefatos em `evals/runs/` existentes foram
+produzidos sob a política anterior. Permanecem históricos, intocados, e não
+constituem prova atual da política de provider remoto. Consulte a
+[política de conformance V1.5](docs/evidence/conformance-policy-v1.5.md), o
+[contrato do runner](docs/evidence/conformance-runner-v1.5.md) e a [matriz de
+hosts](docs/HOST_MATRIX_V1_5.md).
 
 ## Evidência da v1.4.0
 
 A V1.3 privada estabeleceu o baseline comportamental e de auditabilidade a partir do qual o produto público foi derivado. Esses resultados históricos não foram tratados como prova automática da V1.4.
 
-A release pública `v1.4.0` passou:
-
-- suíte comportamental/output de 29 casos com Gemma: **29/29**;
-- cross-grader independente Qwen: **29/29**;
-- zero critical failures;
-- zero grader disagreements;
-- Hermes live capability E2E: **6/6 no mesmo candidate SHA**;
-- H14-E04 Grounded Corpus Research com `source_read` real observado;
-- promotion CI: PASS;
-- downstream `main` CI: PASS;
-- workflow de stable release: PASS;
-- tag e GitHub Release criadas no commit exato verificado.
-
-A fronteira completa da evidência está em [`docs/releases/v1.4.0-release-evidence.md`](docs/releases/v1.4.0-release-evidence.md).
+A release pública `v1.4.0` possui evidência histórica documentada em
+[`docs/releases/v1.4.0-release-evidence.md`](docs/releases/v1.4.0-release-evidence.md).
+Ela foi produzida sob a política anterior de modelo local e não substitui os
+gates V1.5 atuais.
 
 ## Estrutura do repositório
 

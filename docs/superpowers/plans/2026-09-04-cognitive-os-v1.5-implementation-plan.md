@@ -6,14 +6,20 @@
 
 **Architecture:** O diretório `skills/cognitive-os/` continua sendo a única fonte cognitiva. O bootstrap existente recebe contratos de estado, discovery, research budget e fechamento; `evals/e2e/run_hermes_e2e.py` continua sendo o harness Hermes; o registry de adapters existente é estendido para discovery assets. O cliente de telemetria fica separado do trace local e usa uma projeção allowlist estrita; qualquer collector fica fora deste repositório público.
 
-**Tech Stack:** Python 3 stdlib, JSON Schema Draft 2020-12, JSON/Markdown, unittest, shell/CI GitHub Actions, Ollama/Hermes quando observáveis.
+**Tech Stack:** Python 3 stdlib, JSON Schema Draft 2020-12, JSON/Markdown, unittest, shell/CI GitHub Actions, provider remoto explícito/Hermes quando observáveis.
+
+> **Política vigente:** este plano contém referências históricas da execução
+> anterior. Não execute modelos locais para testes ou validações. Para novos
+> gates, siga [`docs/evidence/conformance-policy-v1.5.md`](../../evidence/conformance-policy-v1.5.md):
+> CI determinístico obrigatório, behavioral conformance remoto/manual e
+> evidence candidate-bound.
 
 **Spec:** `docs/specs/2026-09-04-cognitive-os-v1.5-public-final.md`
 
 **Implementation status (2026-09-04):** Gates 0–8 and Gate T pass the evidence
 available on candidate `a51407d4c92ef08689f5a7bd2a0aad43698c9681`: V1.4 is
-`29/29`, the primary V1.5 Gemma/Qwen matrix is `58/58`, and the independent
-Qwen SUT critical-only matrix is `14/14`. Gate 9 remains `BLOCKED` because the
+Historical records from the previous policy reported a primary 58-case matrix
+and an independent critical-only matrix. Gate 9 remains `BLOCKED` because the
 fresh Hermes run could not prove MCP or account-bound NotebookLM execution;
 Gate 10 Work is `UNAVAILABLE` in this runtime. The runner explicitly reports
 partial selections as `INCOMPLETE` and keeps the complete 58-case suite as the
@@ -46,7 +52,7 @@ private and `PARTIAL` because no deployed endpoint is claimed.
 - Produces: baseline constants, finding reproduction matrix and explicit `REUSE|EXTEND|REPLACE|NEW` decisions.
 
 - [x] Record `BASELINE_HEAD=41a14aa`, `BASELINE_TAG=fea0fa6`, branch and remote PR/workflow state.
-- [x] Record baseline deterministic result (`76/76`) and behavioral result (`29/29`, Gemma SUT/grader invocation).
+- [x] Preserve the baseline deterministic result and the prior-policy behavioral records as historical evidence.
 - [x] Record historical model-sensitivity evidence without treating it as current proof.
 - [x] Materialize and hash the supplied V1.5 spec.
 - [x] Document every canonical component reused or extended before adding structural files.
@@ -215,7 +221,7 @@ private and `PARTIAL` because no deployed endpoint is claimed.
 ### Task 9: Multi-model, Hermes and Work evidence
 
 **Files:**
-- Modify: `evals/run_local_conformance.py`
+- Create: `evals/run_conformance.py`; retain `evals/run_local_conformance.py` only as a compatibility shim
 - Modify: `evals/e2e/run_hermes_e2e.py`
 - Create: `docs/HOST_MATRIX_V1_5.md`
 - Create: `docs/evidence/work-v1.5-smoke-procedure.md`
@@ -226,8 +232,8 @@ private and `PARTIAL` because no deployed endpoint is claimed.
 - conformance report fields: `candidate_sha`, `source_fingerprint`, `sut_model`, `grader_model`, `grader_independent`, `truncation`, `invented_identity`, `critical_failures`.
 - E2E records bind `run_id`, `started_at`, `correlation_marker`, `candidate_sha` and observed artifacts.
 
-- [x] Add deterministic local grader checks and critical-gate 100% reduction.
-- [x] Run at least two relevant local models where available; report model-specific results.
+- [x] Add deterministic grader-contract checks and critical-gate 100% reduction.
+- [ ] Run behavioral conformance only through explicitly configured remote providers; report observed provider/model identities.
 - [x] Run Hermes only with explicit non-account-bound selection or approved NotebookLM checkpoint; do not use untracked stale sessions. The aggregate remains `BLOCKED` on the fresh run, with MCP and account-bound access recorded as `NOT_CALLED`/`UNKNOWN` rather than simulated success.
 - [x] Produce Work smoke procedure because Work runtime is unavailable; label it `NOT_EXECUTED`.
 

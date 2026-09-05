@@ -23,7 +23,11 @@ class ReleaseWorkflowTests(unittest.TestCase):
         text = WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("validate_release_evidence.py", text)
         self.assertIn("--candidate-sha", text)
-        self.assertIn("VERIFIED_SHA", text)
+        self.assertIn("--require-behavioral-pass", text)
+        self.assertIn("EVIDENCE_COMMIT", text)
+        self.assertIn("CANDIDATE_SHA", text)
+        self.assertIn("git merge-base --is-ancestor", text)
+        self.assertIn('--target "$CANDIDATE_SHA"', text)
 
     def test_release_evidence_validator_rejects_expected_sha_mismatch(self):
         sys.path.insert(0, str(ROOT / "tools"))

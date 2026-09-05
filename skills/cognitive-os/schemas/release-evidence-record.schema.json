@@ -7,7 +7,7 @@
   "required": [
     "schema_version", "repository", "candidate_sha", "version", "source_tree_fingerprint",
     "manifests", "harness", "execution", "sut_models", "grader_models", "runtime_hosts",
-    "tests", "critical_gates", "hermes_e2e", "work", "distribution", "telemetry",
+    "tests", "behavioral_conformance", "critical_gates", "hermes_e2e", "work", "distribution", "telemetry",
     "collector", "known_limitations"
   ],
   "properties": {
@@ -23,6 +23,7 @@
     "grader_models": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/name"}},
     "runtime_hosts": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/name"}},
     "tests": {"$ref": "#/$defs/tests"},
+    "behavioral_conformance": {"$ref": "#/$defs/behavioralConformance"},
     "critical_gates": {"type": "object", "minProperties": 1, "additionalProperties": {"enum": ["PASS", "PARTIAL", "FAIL", "BLOCKED", "UNAVAILABLE"]}},
     "hermes_e2e": {"$ref": "#/$defs/status"},
     "work": {"$ref": "#/$defs/status"},
@@ -90,6 +91,56 @@
         "critical_failures": {"type": "array", "items": {"$ref": "#/$defs/name"}},
         "truncated_cases": {"type": "array", "items": {"$ref": "#/$defs/name"}},
         "invented_identity_cases": {"type": "array", "items": {"$ref": "#/$defs/name"}}
+      }
+    },
+    "providerIdentity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["provider", "name", "fingerprint", "observed"],
+      "properties": {
+        "provider": {"$ref": "#/$defs/name"},
+        "name": {"$ref": "#/$defs/name"},
+        "fingerprint": {"$ref": "#/$defs/sha"},
+        "observed": {"const": true}
+      }
+    },
+    "behavioralConformance": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "schema", "status", "overall", "suite", "profile", "candidate_sha", "source_fingerprint",
+        "eval_rubric_hash", "selection_complete", "critical_coverage_complete", "case_count",
+        "completed_case_count", "pass_count", "required_pass_count", "critical_failures",
+        "incomplete_case_ids", "sut_identity", "grader_identity", "grader_independent", "report"
+      ],
+      "properties": {
+        "schema": {"const": "cognitive-os-conformance-v4"},
+        "status": {"const": "COMPLETE"},
+        "overall": {"const": "PASS"},
+        "suite": {"const": "v1.5"},
+        "profile": {"const": "final"},
+        "candidate_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "source_fingerprint": {"$ref": "#/$defs/sha"},
+        "eval_rubric_hash": {"$ref": "#/$defs/sha"},
+        "selection_complete": {"const": true},
+        "critical_coverage_complete": {"const": true},
+        "case_count": {"const": 58},
+        "completed_case_count": {"const": 58},
+        "pass_count": {"type": "integer", "minimum": 1, "maximum": 58},
+        "required_pass_count": {"type": "integer", "minimum": 1, "maximum": 58},
+        "critical_failures": {"type": "array", "maxItems": 0},
+        "incomplete_case_ids": {"type": "array", "maxItems": 0},
+        "sut_identity": {"$ref": "#/$defs/providerIdentity"},
+        "grader_identity": {"$ref": "#/$defs/providerIdentity"},
+        "grader_independent": {"const": true},
+        "report": {"$ref": "#/$defs/evidenceArtifact"}
+      }
+    },
+    "evidenceArtifact": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "sha256", "source_commit"],
+      "properties": {
+        "path": {"$ref": "#/$defs/text"},
+        "sha256": {"$ref": "#/$defs/sha"},
+        "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
       }
     },
     "status": {

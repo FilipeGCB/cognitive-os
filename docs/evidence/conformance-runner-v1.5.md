@@ -1,103 +1,106 @@
 # V1.5 Conformance Runner
 
-The V1.5 runner (`evals/run_local_conformance.py`) separates SUT execution
-from grading. A SUT response is persisted once per case and can be graded by
-multiple graders without another SUT invocation.
+O runner canônico é `evals/run_conformance.py`. Ele separa execução do SUT e
+grading, usa um adapter provider-neutral para um endpoint remoto explícito e
+nunca escolhe um transporte local por fallback. O caminho histórico
+`evals/run_local_conformance.py` permanece como shim compatível, sem uma segunda
+implementação.
 
-## Selection policy
+## Configuração explícita
 
-Development uses `--profile dev`: all critical cases plus cases affected by
-the changed paths. Selectors can further narrow or target work:
+O provider e o modelo não têm defaults. A credencial é lida somente da
+variável cujo nome foi fornecido; seu valor nunca é escrito no relatório.
 
-```bash
-python evals/run_local_conformance.py --profile dev --workers 1
-python evals/run_local_conformance.py --profile dev --family TL
-python evals/run_local_conformance.py --profile dev --tag consent
-python evals/run_local_conformance.py --profile dev --critical-only
-python evals/run_local_conformance.py --profile dev --case-id RC-01 --case-id TL-01
-```
-
-`--affected-path` supplies an explicit path set; otherwise the runner derives
-it from `--base-ref` (default `HEAD^`) and the working tree. Explicit case,
-tag, and family selectors are additive in `dev`, so a targeted non-critical
-case is not silently discarded; the default critical/affected set remains.
-Selection is recorded in the report and an incomplete selection cannot be
-release `PASS`.
-
-The final candidate uses the complete 58-case selection:
+Exemplo de execução comportamental remota:
 
 ```bash
-python evals/run_local_conformance.py \
-  --profile final --model gemma4:26b-a4b-it-qat \
-  --grader-model qwen3.8:27b --workers 2 \
-  --out /tmp/v1.5-gemma-qwen.json
+export CONFORMANCE_API_KEY='configured-out-of-band'
+export GRADER_API_KEY='configured-out-of-band'
+python evals/run_conformance.py \
+  --suite v1.5 --profile final --workers 2 \
+  --provider remote-sut --base-url https://sut.example/v1 \
+  --api-key-env CONFORMANCE_API_KEY --model remote-model \
+  --grader-provider remote-grader --grader-base-url https://grader.example/v1 \
+  --grader-api-key-env GRADER_API_KEY --grader-model independent-model \
+  --out /tmp/v1.5-remote-conformance.json
 ```
 
-The minimum independent second-model evidence is a critical-only run for the
-other SUT. It is supporting portability evidence, not a substitute for the
-58/58 candidate suite:
+O adapter atual envia o contrato comum `model/messages/temperature/max_tokens`
+para um endpoint remoto compatível com chat-completions. A interface interna
+permite substituir o adapter sem acoplar o contrato cognitivo ao nome de um
+vendor. Endpoints de loopback e providers locais são rejeitados.
+
+## Seleção
+
+`--profile dev` mantém todos os casos críticos e os casos afetados pelos paths
+alterados. Selectors podem restringir ou direcionar a seleção:
 
 ```bash
-python evals/run_local_conformance.py \
-  --profile final --critical-only --model qwen3.8:27b \
-  --grader-model gemma4:26b-a4b-it-qat --workers 2 \
-  --out /tmp/v1.5-qwen-gemma-critical.json
+python evals/run_conformance.py --profile dev --family TL
+python evals/run_conformance.py --profile dev --tag consent
+python evals/run_conformance.py --profile dev --critical-only
+python evals/run_conformance.py --profile dev --case-id RC-01 --case-id TL-01
 ```
 
-## Separate phases and cache
+`--affected-path` fornece um conjunto explícito; caso contrário, os paths vêm
+de `--base-ref`. A seleção é registrada. Uma seleção parcial nunca é a suíte
+final e não pode produzir release `PASS`.
 
-To produce SUT responses once and grade them repeatedly:
+O profile `final` seleciona os 58 casos V1.5:
 
 ```bash
-python evals/run_local_conformance.py --phase sut --profile final \
-  --model gemma4:26b-a4b-it-qat --sut-out /tmp/v1.5-gemma.sut.json
-python evals/run_local_conformance.py --phase grade --profile final \
-  --sut-report /tmp/v1.5-gemma.sut.json \
-  --grader-model qwen3.8:27b --out /tmp/v1.5-gemma-qwen.json
+python evals/run_conformance.py --profile final --provider remote-sut \
+  --base-url https://sut.example/v1 --api-key-env CONFORMANCE_API_KEY \
+  --model remote-model --grader-provider remote-grader \
+  --grader-base-url https://grader.example/v1 --grader-api-key-env GRADER_API_KEY \
+  --grader-model independent-model --workers 2 \
+  --out /tmp/v1.5-remote-final.json
 ```
 
-The SUT cache key contains the suite, case ID and case contract, skill/package
-fingerprint, model name and observed digest, request configuration, and SUT
-system-prompt hash. The per-case contract hash invalidates only the changed
-case, so an edit does not invalidate unrelated responses. It does not contain grader identity. The grade cache adds
-grader identity and the SUT cache key. A producer candidate is retained as
-metadata for auditability, while runner-only changes do not invalidate an
-otherwise identical request. Release evidence must still record the exact
-candidate and disclose reused producer evidence when applicable.
+## Fases, cache e checkpoints
 
-Cache files are local diagnostics and default to
-`/tmp/cognitive-os-conformance-cache`; they are never committed. Cache use is
-disabled when the candidate SHA or model digest cannot be observed, or with
-`--no-cache`.
+As fases podem ser executadas separadamente:
 
-Every completed case atomically updates its SUT or grade checkpoint. An
-interrupted process therefore remains `INCOMPLETE` and can resume without
-discarding completed responses. Concurrency is bounded by `--workers` (1–8);
-the default is one worker because local model memory and provider limits vary.
+```bash
+python evals/run_conformance.py --phase sut --profile final \
+  --provider remote-sut --base-url https://sut.example/v1 \
+  --api-key-env CONFORMANCE_API_KEY --model remote-model \
+  --sut-out /tmp/v1.5-sut.json
 
-## Call estimate
+python evals/run_conformance.py --phase grade --profile final \
+  --sut-report /tmp/v1.5-sut.json \
+  --grader-provider remote-grader --grader-base-url https://grader.example/v1 \
+  --grader-api-key-env GRADER_API_KEY --grader-model independent-model \
+  --out /tmp/v1.5-grade.json
+```
 
-The former symmetric full matrix required 2 SUT matrices × 58 cases × (one SUT
-call + one grader call): **232 model calls** before failures/retries.
+O cache do SUT inclui suite, caso, contrato/eval do caso, fingerprint do
+pacote, identidade observada do modelo e configuração da requisição. Não inclui
+identidade do grader. O cache de grading inclui a identidade do grader e a
+resposta do SUT. Cache só é reutilizado com candidate SHA e identidade
+observáveis; `--no-cache` o desativa.
 
-The optimized release policy is one complete Gemma SUT/grader matrix (116
-calls) plus independent Qwen SUT critical-only evidence (14 × 2 = 28 calls):
-**144 calls** before cache hits. Development uses `2N` calls for one selected
-SUT/grader pair, or `4N` when both SUTs are intentionally selected, where `N`
-is the selected case count. Changing only the grader reuses the `N` cached SUT
-responses.
+Cada caso concluído atualiza atomicamente seu checkpoint. Interrupção,
+timeout, erro de transporte ou seleção incompleta preserva `INCOMPLETE`; não há
+reclassificação para `PASS`. Sem provider/credencial/modelo, ou sem identidade
+observada, o runner escreve `status=NOT_EXECUTED`, `overall=UNAVAILABLE` e
+retorna código não-zero sem fazer chamadas.
 
-This policy preserves 100% critical coverage and the complete 58-case release
-gate while avoiding a second complete symmetric matrix. It does not claim
-model portability from a single model: both Gemma and Qwen remain tested, and
-critical failures remain blocking.
+## Identidade e release
 
-## Candidate observation
+O relatório registra candidate SHA, fingerprint da skill, hash do bundle de
+evals, provider/modelo observados do SUT e do grader, independência do grader,
+seleção, completude, flags determinísticas e chamadas reais. O release
+validator exige o relatório `COMPLETE`/`PASS` da suíte final de 58 casos,
+hashado e anexado ao commit de evidence, com `source_commit` e campos internos
+vinculados ao candidate, antes de aceitar behavioral conformance como evidência
+de release.
 
-On candidate `a51407d4c92ef08689f5a7bd2a0aad43698c9681`, the revalidation
-produced `58/58`, `14/14` critical and `29/29` V1.4 with zero new model calls:
-the reports recorded the corresponding SUT and grade cache hits. A fresh
-single-case grader-change check recorded `sut_calls=0`, `grader_calls=1` and
-`actual_total=1`; producer-artifact counters were retained separately. This
-is the observable contract that prevents a grader-only change from silently
-regenerating SUT answers.
+## Fronteira da prova
+
+O runner prova respostas observáveis para o provider/modelo declarado. Ele não
+concede ferramentas externas ao SUT; casos de capability routing avaliam a
+decisão de usar ou solicitar uma capability, não uma invocação de terceiros.
+Host E2E Hermes e CI determinístico são gates separados. Os relatórios antigos
+produzidos sob a política anterior permanecem preservados e não são reescritos
+por este procedimento.

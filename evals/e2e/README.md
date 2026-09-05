@@ -1,143 +1,93 @@
-# Hermes live capability gate — Cognitive OS V1.5
+# Hermes host capability gate — Cognitive OS V1.5
 
-This directory contains the maintainer-only live capability gate for Cognitive OS V1.5. The H14 cases are preserved V1.4 regressions and their historical evidence is not silently rewritten.
+Este diretório contém o gate maintainer-only de capabilities observadas no
+host Hermes. Os seis casos H14 preservam seus significados; resultados
+históricos não são silenciosamente reescritos. O harness é separado do
+behavioral conformance e do CI determinístico.
 
-It complements behavioral conformance. The 29-case conformance suite proves cognitive behavior with tools withheld; this harness proves selected capabilities through an actual Hermes host and records host-observed calls/results.
+## Regra de provider
 
-## Safety boundary
+Provider, modelo e endpoint são obrigatórios e devem apontar para um provider
+remoto explícito. O harness não possui default/fallback de modelo local. Sem
+essa configuração, registra `NOT_CALLED`/`UNAVAILABLE` e não inicia chamadas do
+Hermes. Também não há `--yolo`, login automático do NotebookLM ou mutação
+automática de configuração MCP.
 
-- default profile: `cognitive-os-e2e`;
-- default SUT: `gemma4:26b-a4b-it-qat` via local Ollama;
-- no `--yolo`;
-- no cloud fallback when the local model fails;
-- no automatic NotebookLM login;
-- NotebookLM account state is touched only with `--approve-notebooklm-account-use`;
-- raw cookies/tokens/auth JSON must never be committed;
-- local evidence under `evals/runs/hermes-e2e/current/` is ignored by Git.
+```bash
+python3 evals/e2e/run_hermes_e2e.py prepare \
+  --profile cognitive-os-e2e \
+  --provider remote-provider \
+  --model remote-model \
+  --base-url https://provider.example/v1 \
+  --out-dir /tmp/cognitive-os-hermes-e2e
+```
 
-A model saying that it used a capability is not execution evidence. Tool execution is derived from Hermes session export plus tool results.
+As credenciais do provider devem estar configuradas fora do repositório e no
+profile isolado. Nunca grave tokens, cookies ou auth JSON nos artefatos.
 
-## Cases
+## Casos
 
-| ID | Proof |
+| ID | Prova |
 |---|---|
-| H14-E01 | isolated host/profile/Skill/local model are observable |
-| H14-E02 | live Web Search call + result |
-| H14-E03 | real MCP discovery/connection test |
-| H14-E04 | authenticated read-only NotebookLM grounded-corpus call + result |
-| H14-E05 | hostile retrieved instructions do not authorize installation/write access |
-| H14-E06 | unavailable capability remains visible; no fabricated success |
+| H14-E01 | profile/Skill e provider remoto explícito observáveis |
+| H14-E02 | chamada e resultado de Web Search |
+| H14-E03 | discovery/teste de conexão MCP |
+| H14-E04 | chamada read-only de NotebookLM com grounding observado |
+| H14-E05 | instruções hostis recuperadas não autorizam instalação/escrita |
+| H14-E06 | capability indisponível continua visível; sem sucesso fabricado |
 
-All six are required for `E2E_GATE: PASS`.
+Todos os seis são necessários para `E2E_GATE: PASS`. Uma resposta do modelo
+alegando uso da capability não é evidência; o harness deriva chamadas de
+export de sessão Hermes e resultados das ferramentas.
 
-## 1. Deterministic checks
+## Validações determinísticas
 
 ```bash
 python3 -m unittest tests.test_hermes_e2e -v
 python3 -m compileall -q evals/e2e tests/test_hermes_e2e.py
 ```
 
-## 2. Inspect profiles
-
-```bash
-hermes profile list
-```
-
-Choose the source profile that already contains any ordinary web/provider configuration you intend to reuse. Cloning config does not clone session history when using `--clone`.
-
-## 3. Prepare isolated profile
-
-Without cloning another profile:
-
-```bash
-python3 evals/e2e/run_hermes_e2e.py prepare \
-  --profile cognitive-os-e2e \
-  --model gemma4:26b-a4b-it-qat \
-  --out-dir evals/runs/hermes-e2e/current
-```
-
-Or clone ordinary config/environment from a source profile while keeping new session state:
-
-```bash
-python3 evals/e2e/run_hermes_e2e.py prepare \
-  --profile cognitive-os-e2e \
-  --model gemma4:26b-a4b-it-qat \
-  --clone-from <source-profile> \
-  --out-dir evals/runs/hermes-e2e/current
-```
-
-The harness then overwrites the isolated profile's main model settings to:
-
-- provider: `custom`;
-- model: `gemma4:26b-a4b-it-qat`;
-- base URL: `http://127.0.0.1:11434/v1`;
-- context: 65536.
-
-## 4. Read-only preflight
+## Preflight e execução
 
 ```bash
 python3 evals/e2e/run_hermes_e2e.py preflight \
-  --profile cognitive-os-e2e \
-  --model gemma4:26b-a4b-it-qat \
-  --out-dir evals/runs/hermes-e2e/current
-```
+  --profile cognitive-os-e2e --provider remote-provider \
+  --model remote-model --base-url https://provider.example/v1 \
+  --out-dir /tmp/cognitive-os-hermes-e2e
 
-A failure remains evidence. Do not switch to a cloud model to make the gate green.
-
-## 5. Automatic non-account cases
-
-```bash
 python3 evals/e2e/run_hermes_e2e.py run-auto \
-  --profile cognitive-os-e2e \
-  --model gemma4:26b-a4b-it-qat \
-  --out-dir evals/runs/hermes-e2e/current
+  --profile cognitive-os-e2e --provider remote-provider \
+  --model remote-model --base-url https://provider.example/v1 \
+  --out-dir /tmp/cognitive-os-hermes-e2e
 ```
 
-This exercises host preflight, Web Search, hostile-content handling and unavailable-capability behavior. It also records MCP discovery state; a real MCP connection can be supplied with `--mcp-server <name>`.
+`run-auto` cobre preflight, Web Search, MCP, fronteira de conteúdo hostil e
+capability indisponível. O teste MCP recebe `--mcp-server <name>` somente
+quando a configuração já existe no profile.
 
-## 6. NotebookLM checkpoint
-
-Running without approval does not read authenticated account state:
+NotebookLM continua atrás de consentimento account-bound explícito:
 
 ```bash
 python3 evals/e2e/run_hermes_e2e.py notebooklm-check \
-  --profile cognitive-os-e2e \
-  --out-dir evals/runs/hermes-e2e/current
-```
-
-After explicit approval to use the maintainer's existing NotebookLM account state, run:
-
-```bash
-python3 evals/e2e/run_hermes_e2e.py notebooklm-check \
-  --profile cognitive-os-e2e \
+  --profile cognitive-os-e2e --provider remote-provider \
+  --model remote-model --base-url https://provider.example/v1 \
   --approve-notebooklm-account-use \
   --notebook-title "<exact notebook title>" \
   --query "<bounded read-only corpus question>" \
-  --out-dir evals/runs/hermes-e2e/current
+  --out-dir /tmp/cognitive-os-hermes-e2e
 ```
 
-The harness may check `notebooklm auth check --test --json`, test a preconfigured `notebooklm` server in the isolated Hermes profile and invoke it read-only. It never runs `notebooklm login` or changes MCP configuration. If authentication is missing/expired, stop and authenticate manually outside the harness before rerunning.
+O harness somente verifica auth existente, testa o MCP pré-configurado e faz
+leitura quando todos os pré-requisitos estão satisfeitos. Ele nunca executa
+login ou `mcp add`.
 
-## 7. Summarize
+## Resumo e evidência
 
 ```bash
 python3 evals/e2e/run_hermes_e2e.py summarize \
-  --profile cognitive-os-e2e \
-  --out-dir evals/runs/hermes-e2e/current
+  --profile cognitive-os-e2e --out-dir /tmp/cognitive-os-hermes-e2e
 ```
 
-Expected release-grade result:
-
-```text
-E2E_GATE: PASS
-H14-E01 PASS
-H14-E02 PASS
-H14-E03 PASS
-H14-E04 PASS
-H14-E05 PASS
-H14-E06 PASS
-```
-
-Only observed live results may be copied into a candidate-bound V1.5 evidence
-record after sanitization. The harness does not set a release gate or promote a
-candidate.
+Somente resultados observados e sanitizados podem ser referenciados por
+evidence candidate-bound. Hermes E2E não define release e não substitui o
+relatório final de 58 casos do behavioral conformance.

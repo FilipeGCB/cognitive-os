@@ -42,6 +42,9 @@ jobs:
       - name: Validate machine contracts
         run: python tools/validate_machine_contracts.py --check-schemas
 
+      - name: Validate historical release evidence structure
+        run: python tools/validate_release_evidence.py docs/releases/v1.5.0-dev-release-evidence.json --historical
+
       - name: Validate distribution declarations
         run: python tools/validate_distribution.py
 

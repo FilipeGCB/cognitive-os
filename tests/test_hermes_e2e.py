@@ -310,7 +310,13 @@ class HermesE2EHarnessTests(unittest.TestCase):
                  patch.object(h, "run_mcp_case", return_value=record("H14-E03")), \
                  patch.object(h, "run_untrusted_case", return_value=record("H14-E05")), \
                  patch.object(h, "run_unavailable_case", return_value=record("H14-E06")):
-                exit_code = h.main(["run-auto", "--out-dir", tmp])
+                exit_code = h.main([
+                    "run-auto",
+                    "--provider", "remote-test",
+                    "--model", "remote-sut",
+                    "--base-url", "https://provider.example/v1",
+                    "--out-dir", tmp,
+                ])
 
         self.assertEqual(exit_code, 1)
 
@@ -338,6 +344,20 @@ class HermesE2EHarnessTests(unittest.TestCase):
         change = h.snapshot_changes(before, after)
         self.assertTrue(change["persistent_change"])
         self.assertIn("skills/cognitive-os/SKILL.md", change["changed_paths"])
+
+    def test_hermes_provider_configuration_is_explicit_and_fail_closed(self):
+        configuration = h.resolve_provider_config(None, None, None)
+        self.assertFalse(configuration["configured"])
+        self.assertEqual(configuration["state"], "UNAVAILABLE")
+        self.assertIn("no provider", configuration["reason"].lower())
+        local = h.resolve_provider_config("ollama", "model", "https://provider.example/v1")
+        self.assertFalse(local["configured"])
+        self.assertIn("local providers", local["reason"])
+
+    def test_hermes_source_has_no_implicit_local_provider_defaults(self):
+        source = inspect.getsource(h)
+        for forbidden in ("DEFAULT_MODEL", "DEFAULT_BASE_URL", "127.0.0.1"):
+            self.assertNotIn(forbidden, source)
 
 
 if __name__ == "__main__":

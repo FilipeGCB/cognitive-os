@@ -24,7 +24,7 @@ jobs:
       - name: Create immutable stable tag and GitHub Release when every gate is explicit
         env:
           GH_TOKEN: ${{ github.token }}
-          VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
+          EVIDENCE_COMMIT: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
           VERSION="$(tr -d '[:space:]' < skills/cognitive-os/VERSION)"
@@ -45,14 +45,29 @@ jobs:
             EVIDENCE="docs/releases/v1.4.0-release-evidence.md"
             test -f "$EVIDENCE"
             grep -Fxq 'RELEASE_GATE: PASS' "$EVIDENCE"
+            CANDIDATE_SHA="$EVIDENCE_COMMIT"
           else
             EVIDENCE="docs/releases/v${VERSION}-release-evidence.json"
             test -f "$EVIDENCE"
-            python3 tools/validate_release_evidence.py "$EVIDENCE" --candidate-sha "$VERIFIED_SHA"
+            # Behavioral reports are generated after the tested candidate is
+            # known. The evidence commit may therefore be a documentation-only
+            # descendant that points back to the exact candidate SHA.
+            CANDIDATE_SHA="$(python3 - "$EVIDENCE" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          record = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          print(record["candidate_sha"])
+          PY
+            )"
+            git merge-base --is-ancestor "$CANDIDATE_SHA" "$EVIDENCE_COMMIT"
+            python3 tools/validate_release_evidence.py "$EVIDENCE" --candidate-sha "$CANDIDATE_SHA" --require-behavioral-pass
           fi
 
-          test "$(git rev-parse HEAD)" = "$VERIFIED_SHA"
+          test "$(git rev-parse HEAD)" = "$EVIDENCE_COMMIT"
+          test "$(git rev-parse "$CANDIDATE_SHA")" = "$CANDIDATE_SHA"
           gh release create "$TAG" \
-            --target "$VERIFIED_SHA" \
+            --target "$CANDIDATE_SHA" \
             --title "Cognitive OS ${TAG}" \
             --generate-notes

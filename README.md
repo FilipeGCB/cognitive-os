@@ -183,37 +183,33 @@ execution is still subject to the security/consent gate. The optional Flight
 Recorder defaults to `OFF`; its shared payload is strictly allowlisted and
 contains operational categories, never conversation content.
 
-The V1.5 development evidence is explicit about its current boundary:
+The V1.5 gate boundary is now explicit:
 
-- deterministic contracts, public scan and distribution projection: PASS;
-- V1.4 regression conformance: **29/29 PASS**;
-- V1.5 primary Gemma SUT with independent Qwen grader: **58/58 PASS**;
-- independent Qwen SUT evidence on the 14 critical cases: **14/14 PASS**;
-  its report remains `INCOMPLETE` globally because it is intentionally not a
-  substitute for the complete 58-case candidate suite;
-- fresh Hermes V1.5 E2E: `BLOCKED` because MCP was not configured and the
-  account-bound NotebookLM path was not authorized;
-- public telemetry Gate T: `PASS`, with sharing still `UNAVAILABLE` by default;
-- private collector source: implemented separately, with deployment status
-  `PARTIAL` and no endpoint claimed as deployed;
-- ChatGPT Work: `NOT_EXECUTED` in this environment; its exact smoke procedure
-  is documented rather than presented as runtime evidence.
+- push/PR CI is deterministic: contracts, public scan, distribution, install
+  smoke and release-evidence structure are validated without model inference;
+- behavioral conformance is a separate manual workflow using an explicit
+  remote provider, explicit SUT/grader models and candidate-bound evidence;
+- Hermes host E2E is a separate host capability check and is not substituted by
+  behavioral conformance;
+- a release cannot claim behavioral `PASS` without a complete final 58-case
+  report, observed SUT/grader identities and the strict release validator.
 
-The development runner selects deterministic, affected and critical cases by
-default, separates SUT execution from grading, and reserves the complete
-58-case suite for the candidate profile. Per-case SUT cache keys exclude the
-grader identity, so a grader change can reuse an observed SUT response without
-calling the SUT again. See the [runner contract](docs/evidence/conformance-runner-v1.5.md),
-the [V1.5 evidence pack](docs/evidence/), the [machine release-evidence record](docs/releases/v1.5.0-dev-release-evidence.json),
-and the [host matrix](docs/HOST_MATRIX_V1_5.md). These records bind behavioral
-claims to candidate `a51407d4c92ef08689f5a7bd2a0aad43698c9681`; this remains a
-development candidate and is not a stable release.
+The existing Gemma/Qwen/Ollama reports and `evals/runs/` artifacts are retained
+as historical evidence produced under the previous policy. They are not
+rewritten or treated as current proof for this remote-provider policy. See the
+[V1.5 conformance policy](docs/evidence/conformance-policy-v1.5.md),
+[runner contract](docs/evidence/conformance-runner-v1.5.md),
+[V1.5 evidence pack](docs/evidence/), and [host matrix](docs/HOST_MATRIX_V1_5.md).
 
 ## Conformance
 
 The private predecessor V1.3 established the behavioral and auditability baseline from which this public product was derived. Those historical results do **not** automatically prove V1.4.
 
-The public V1.4 case manifests live under [`evals/`](evals/). The released `v1.4.0` candidate passed the declared 29-case behavioral/output suite with the local Gemma SUT and an independent Qwen cross-grader, with zero critical failures and zero grader disagreements. Live Hermes capability E2E also passed 6/6 on one candidate SHA. Promotion CI, downstream `main` CI, and the stable release workflow subsequently passed before the `v1.4.0` tag and GitHub Release were created. See [`docs/releases/v1.4.0-release-evidence.md`](docs/releases/v1.4.0-release-evidence.md) for the evidence boundary.
+The public V1.4 case manifests live under [`evals/`](evals/). Its released
+behavioral and Hermes results are historical evidence from the previous local-
+model policy; they are not a V1.5 gate. See
+[`docs/releases/v1.4.0-release-evidence.md`](docs/releases/v1.4.0-release-evidence.md)
+for that evidence boundary.
 
 ## License
 

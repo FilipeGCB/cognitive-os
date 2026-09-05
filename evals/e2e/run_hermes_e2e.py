@@ -19,6 +19,7 @@ import sys
 import tempfile
 import hashlib
 import time
+import urllib.parse
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -26,14 +27,14 @@ ROOT = Path(__file__).resolve().parents[2]
 SKILL_SOURCE = ROOT / "skills" / "cognitive-os"
 CASE_FILE = Path(__file__).with_name("hermes-cases.json")
 DEFAULT_PROFILE = "cognitive-os-e2e"
-DEFAULT_MODEL = "gemma4:26b-a4b-it-qat"
-DEFAULT_BASE_URL = "http://127.0.0.1:11434/v1"
 DEFAULT_CONTEXT = 65536
 DEFAULT_TIMEOUT = 240
 SCHEMA = "cognitive-os-hermes-e2e-v1.5"
 CASE_IDS = tuple(f"H14-E0{i}" for i in range(1, 7))
 SKILL_TOOLS = {"skill_view", "skills_list", "skill_manage", "skills"}
 ACCOUNT_BOUND_MCP_SERVERS = {"notebooklm"}
+LOOPBACK_HOSTS = {"localhost", "localhost.localdomain", "::1"}
+LOCAL_PROVIDER_NAMES = {"ollama", "local", "loopback", "embedded"}
 
 _RESULT_TO_STATE = {
     "SUCCESS": "EXECUTED",
@@ -63,6 +64,80 @@ _MUTATION_PATTERNS = (
 )
 
 _ACTIVE_RUN_CONTEXT: dict[str, str] | None = None
+
+
+def resolve_provider_config(
+    provider: str | None,
+    model: str | None,
+    base_url: str | None,
+) -> dict[str, Any]:
+    """Resolve an explicit remote Hermes provider without selecting a fallback."""
+
+    provider_value = str(provider or "").strip()
+    model_value = str(model or "").strip()
+    base_url_value = str(base_url or "").strip()
+    missing = [
+        label for label, value in (
+            ("provider", provider_value),
+            ("model", model_value),
+            ("base_url", base_url_value),
+        ) if not value
+    ]
+    if missing:
+        return {
+            "configured": False,
+            "state": "UNAVAILABLE",
+            "provider": provider_value or None,
+            "model": model_value or None,
+            "base_url": base_url_value or None,
+            "reason": f"no provider configuration: missing {', '.join(missing)}; no local fallback",
+        }
+    parsed = urllib.parse.urlsplit(base_url_value)
+    hostname = (parsed.hostname or "").lower()
+    if provider_value.lower() in LOCAL_PROVIDER_NAMES:
+        return {
+            "configured": False,
+            "state": "UNAVAILABLE",
+            "provider": provider_value,
+            "model": model_value,
+            "base_url": base_url_value,
+            "reason": "local providers are not allowed; configure an explicit remote provider",
+        }
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return {
+            "configured": False,
+            "state": "UNAVAILABLE",
+            "provider": provider_value,
+            "model": model_value,
+            "base_url": base_url_value,
+            "reason": "base_url must be an absolute HTTP(S) remote endpoint",
+        }
+    if parsed.username or parsed.password or parsed.query or parsed.fragment:
+        return {
+            "configured": False,
+            "state": "UNAVAILABLE",
+            "provider": provider_value,
+            "model": model_value,
+            "base_url": base_url_value,
+            "reason": "base_url must not embed credentials, query secrets or fragments",
+        }
+    if hostname in LOOPBACK_HOSTS or hostname.startswith("127.") or hostname.startswith("[::1]") or hostname.endswith(".localhost"):
+        return {
+            "configured": False,
+            "state": "UNAVAILABLE",
+            "provider": provider_value,
+            "model": model_value,
+            "base_url": base_url_value,
+            "reason": "loopback provider endpoints are not allowed; configure an explicit remote provider",
+        }
+    return {
+        "configured": True,
+        "state": "AVAILABLE",
+        "provider": provider_value,
+        "model": model_value,
+        "base_url": base_url_value,
+        "reason": "",
+    }
 
 
 def now_iso() -> str:
@@ -475,7 +550,7 @@ def _write_json(path: Path, data: Any) -> None:
 def _out_dir(value: str | None) -> Path:
     if value:
         return Path(value).expanduser().resolve()
-    return ROOT / "evals" / "runs" / "hermes-e2e" / "current"
+    return Path(tempfile.gettempdir()) / "cognitive-os-hermes-e2e" / "current"
 
 
 def _record(
@@ -524,16 +599,18 @@ def _record(
 
 def prepare_profile(
     profile: str,
+    provider: str | None,
     model: str,
     base_url: str,
     context_length: int,
     timeout: int,
     clone_from: str | None,
 ) -> dict[str, Any]:
+    provider_config = resolve_provider_config(provider, model, base_url)
+    if not provider_config["configured"]:
+        raise RuntimeError(provider_config["reason"])
     if not shutil.which("hermes"):
         raise RuntimeError("hermes executable not found")
-    if not shutil.which("ollama"):
-        raise RuntimeError("ollama executable not found")
 
     operations: list[dict[str, Any]] = []
     listed = run_command(["hermes", "profile", "list"], timeout=timeout)
@@ -562,11 +639,9 @@ def prepare_profile(
 
     settings = [
         ("model.default", model),
-        ("model.provider", "custom"),
+        ("model.provider", provider),
         ("model.base_url", base_url),
-        ("model.api_key", "ollama"),
         ("model.context_length", str(context_length)),
-        ("model.ollama_num_ctx", str(context_length)),
         ("agent.max_turns", "12"),
     ]
     for key, value in settings:
@@ -581,6 +656,7 @@ def prepare_profile(
         "profile": profile,
         "profile_scope": f"hermes-profile:{profile}",
         "skill_path": "skills/cognitive-os",
+        "provider": provider,
         "model": model,
         "base_url": base_url,
         "context_length": context_length,
@@ -590,13 +666,29 @@ def prepare_profile(
     }
 
 
-def preflight(profile: str, model: str, timeout: int, out_dir: Path) -> dict[str, Any]:
+def preflight(profile: str, provider: str | None, model: str | None, base_url: str | None, timeout: int, out_dir: Path) -> dict[str, Any]:
+    provider_config = resolve_provider_config(provider, model, base_url)
+    if not provider_config["configured"]:
+        record = _record(
+            "H14-E01",
+            "Capability Discovery",
+            "Hermes CLI + explicit remote provider",
+            "UNAVAILABLE",
+            "NOT_CALLED",
+            "UNAVAILABLE",
+            False,
+            profile,
+            evidence_refs=["explicit remote provider configuration"],
+            notes=provider_config["reason"],
+        )
+        _write_json(out_dir / "H14-E01.json", record)
+        _write_json(out_dir / "preflight.json", record)
+        return record
     checks = {
         "hermes_version": run_command(["hermes", "--version"], timeout=timeout),
         "profiles": run_command(["hermes", "profile", "list"], timeout=timeout),
         "skill_list": run_command(["hermes", "-p", profile, "skills", "list"], timeout=timeout),
         "mcp_list": run_command(["hermes", "-p", profile, "mcp", "list"], timeout=timeout),
-        "ollama_model": run_command(["ollama", "show", model], timeout=timeout),
         "model_default": run_command(["hermes", "-p", profile, "config", "get", "model.default"], timeout=timeout),
         "model_provider": run_command(["hermes", "-p", profile, "config", "get", "model.provider"], timeout=timeout),
         "model_base_url": run_command(["hermes", "-p", profile, "config", "get", "model.base_url"], timeout=timeout),
@@ -605,7 +697,6 @@ def preflight(profile: str, model: str, timeout: int, out_dir: Path) -> dict[str
         "hermes_version",
         "profiles",
         "skill_list",
-        "ollama_model",
         "model_default",
         "model_provider",
         "model_base_url",
@@ -613,23 +704,52 @@ def preflight(profile: str, model: str, timeout: int, out_dir: Path) -> dict[str
     passed = all(checks[name]["exit_code"] == 0 and not checks[name]["timed_out"] for name in required)
     passed = passed and "cognitive-os" in checks["skill_list"]["stdout"]
     passed = passed and model in checks["model_default"]["stdout"]
-    passed = passed and "custom" in checks["model_provider"]["stdout"].lower()
+    passed = passed and provider.lower() in checks["model_provider"]["stdout"].lower()
+    passed = passed and base_url in checks["model_base_url"]["stdout"]
 
     record = _record(
         "H14-E01",
         "Capability Discovery",
-        "Hermes CLI + Ollama",
+        "Hermes CLI + explicit remote provider",
         "AVAILABLE" if passed else "UNKNOWN",
         "CALLED",
         "SUCCESS" if passed else "FAILED",
         passed,
         profile,
         evidence_refs=list(checks.keys()),
-        notes="Isolated profile, Skill visibility and local model/provider preflight.",
+        notes=f"Isolated profile, Skill visibility and explicit remote provider preflight: {provider_config['provider']}/{provider_config['model']}.",
         command_evidence=[{"name": name, **_min_command_result(value)} for name, value in checks.items()],
     )
     _write_json(out_dir / "H14-E01.json", record)
     _write_json(out_dir / "preflight.json", record)
+    return record
+
+
+def unavailable_case(
+    case_id: str,
+    capability: str,
+    profile: str,
+    out_dir: Path,
+    provider_config: dict[str, Any],
+) -> dict[str, Any]:
+    """Persist an explicit NOT_EXECUTED/UNAVAILABLE case without invoking Hermes."""
+
+    record = _record(
+        case_id,
+        capability,
+        "Hermes CLI + explicit remote provider",
+        "UNAVAILABLE",
+        "NOT_CALLED",
+        "UNAVAILABLE",
+        False,
+        profile,
+        evidence_refs=["explicit remote provider configuration"],
+        notes=(
+            f"NOT_EXECUTED: {provider_config.get('reason') or 'remote provider unavailable'}. "
+            "No provider fallback is selected."
+        ),
+    )
+    _write_json(out_dir / f"{case_id}.json", record)
     return record
 
 
@@ -937,7 +1057,16 @@ def run_notebooklm_case(
     approved: bool,
     notebook_title: str | None,
     query: str | None,
+    provider_config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    if not provider_config or not provider_config.get("configured"):
+        return unavailable_case(
+            "H14-E04",
+            "Grounded Corpus Research",
+            profile,
+            out_dir,
+            provider_config or resolve_provider_config(None, None, None),
+        )
     if not notebooklm_account_use_allowed(approved):
         record = _record(
             "H14-E04",
@@ -1097,7 +1226,9 @@ def summarize(out_dir: Path) -> dict[str, Any]:
 
 def _add_common(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--profile", default=DEFAULT_PROFILE)
-    parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--provider", default=os.environ.get("HERMES_E2E_PROVIDER"), help="Explicit remote provider name")
+    parser.add_argument("--model", default=os.environ.get("HERMES_E2E_MODEL"), help="Explicit remote model")
+    parser.add_argument("--base-url", default=os.environ.get("HERMES_E2E_BASE_URL"), help="Explicit remote provider base URL")
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT)
     parser.add_argument("--out-dir", default=None)
 
@@ -1109,7 +1240,6 @@ def main(argv: list[str] | None = None) -> int:
 
     p_prepare = sub.add_parser("prepare")
     _add_common(p_prepare)
-    p_prepare.add_argument("--base-url", default=DEFAULT_BASE_URL)
     p_prepare.add_argument("--context-length", type=int, default=DEFAULT_CONTEXT)
     p_prepare.add_argument("--clone-from", default=None)
 
@@ -1134,8 +1264,14 @@ def main(argv: list[str] | None = None) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     if args.command == "prepare":
+        provider_config = resolve_provider_config(args.provider, args.model, args.base_url)
+        if not provider_config["configured"]:
+            _write_json(out_dir / "prepare.json", provider_config)
+            print(json.dumps(provider_config, indent=2))
+            return 2
         data = prepare_profile(
             args.profile,
+            args.provider,
             args.model,
             args.base_url,
             args.context_length,
@@ -1147,26 +1283,37 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "preflight":
-        record = preflight(args.profile, args.model, args.timeout, out_dir)
+        record = preflight(args.profile, args.provider, args.model, args.base_url, args.timeout, out_dir)
         print(json.dumps(record, indent=2))
         return 0 if record["pass"] else 1
 
     if args.command == "run-auto":
+        provider_config = resolve_provider_config(args.provider, args.model, args.base_url)
         _ACTIVE_RUN_CONTEXT = new_run_context()
         try:
-            records = [
-                preflight(args.profile, args.model, args.timeout, out_dir),
-                run_web_case(args.profile, args.timeout, out_dir),
-                run_mcp_case(args.profile, args.timeout, out_dir, args.mcp_server),
-                run_untrusted_case(args.profile, args.timeout, out_dir),
-                run_unavailable_case(args.profile, args.timeout, out_dir),
-            ]
+            if provider_config["configured"]:
+                records = [
+                    preflight(args.profile, args.provider, args.model, args.base_url, args.timeout, out_dir),
+                    run_web_case(args.profile, args.timeout, out_dir),
+                    run_mcp_case(args.profile, args.timeout, out_dir, args.mcp_server),
+                    run_untrusted_case(args.profile, args.timeout, out_dir),
+                    run_unavailable_case(args.profile, args.timeout, out_dir),
+                ]
+            else:
+                records = [
+                    preflight(args.profile, args.provider, args.model, args.base_url, args.timeout, out_dir),
+                    unavailable_case("H14-E02", "Web Search", args.profile, out_dir, provider_config),
+                    unavailable_case("H14-E03", "Capability Discovery", args.profile, out_dir, provider_config),
+                    unavailable_case("H14-E05", "Capability Discovery", args.profile, out_dir, provider_config),
+                    unavailable_case("H14-E06", "Grounded Corpus Research", args.profile, out_dir, provider_config),
+                ]
         finally:
             _ACTIVE_RUN_CONTEXT = None
         print(json.dumps({record["id"]: record["pass"] for record in records}, indent=2))
         return 0 if all(record["pass"] for record in records) else 1
 
     if args.command == "notebooklm-check":
+        provider_config = resolve_provider_config(args.provider, args.model, args.base_url)
         _ACTIVE_RUN_CONTEXT = new_run_context()
         try:
             record = run_notebooklm_case(
@@ -1176,6 +1323,7 @@ def main(argv: list[str] | None = None) -> int:
                 args.approve_notebooklm_account_use,
                 args.notebook_title,
                 args.query,
+                provider_config,
             )
         finally:
             _ACTIVE_RUN_CONTEXT = None

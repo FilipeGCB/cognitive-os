@@ -4,20 +4,25 @@
 
 **Goal:** Build a reproducible, isolated Hermes E2E harness that produces runtime-observed capability evidence for the V1.4 release gate.
 
-**Architecture:** A stdlib-only Python harness manages an isolated Hermes profile, copies the exact Cognitive OS Skill, configures the local Ollama SUT, runs bounded E2E cases, exports Hermes session history, extracts tool calls/results, and writes minimized capability-evidence JSON. NotebookLM remains behind an explicit account-use checkpoint and is never auto-authenticated.
+> **Superseded policy note:** this earlier design recorded a local-provider
+> implementation. Do not execute that path. The current harness requires an
+> explicitly configured remote provider and records `NOT_EXECUTED`/`UNAVAILABLE`
+> when it is absent; see [`docs/evidence/conformance-policy-v1.5.md`](../../evidence/conformance-policy-v1.5.md).
 
-**Tech Stack:** Python 3 stdlib, Hermes CLI, Ollama OpenAI-compatible endpoint, Hermes session export, NotebookLM CLI/MCP candidate.
+**Architecture:** A stdlib-only Python harness manages an isolated Hermes profile, copies the exact Cognitive OS Skill, configures an explicit remote SUT, runs bounded E2E cases, exports Hermes session history, extracts tool calls/results, and writes minimized capability-evidence JSON. NotebookLM remains behind an explicit account-use checkpoint and is never auto-authenticated.
+
+**Tech Stack:** Python 3 stdlib, Hermes CLI, explicit remote provider endpoint, Hermes session export, NotebookLM CLI/MCP candidate.
 
 **Spec:** `docs/superpowers/specs/2026-09-03-cognitive-os-hermes-e2e-design.md`
 
 ## Global Constraints
 
 - Default Hermes profile: `cognitive-os-e2e`.
-- Default SUT: `gemma4:26b-a4b-it-qat` through `custom` at `http://127.0.0.1:11434/v1`.
+- SUT: provider remoto, modelo e endpoint fornecidos explicitamente; sem defaults.
 - Never use `--yolo`.
 - Never auto-authenticate NotebookLM.
 - Never store credentials/cookies/tokens in evidence.
-- No cloud-model fallback when the local SUT fails.
+- No provider fallback when the explicitly configured remote SUT fails.
 - Runtime tool evidence comes from Hermes host/session data, not model prose alone.
 - `E2E_GATE: PASS` requires all six declared cases.
 - `RELEASE_GATE: PASS` is not written by the harness.
@@ -92,8 +97,8 @@ Expected: PASS.
 - Modify: `tests/test_hermes_e2e.py`
 
 **Interfaces:**
-- `prepare` creates the named profile if absent, optionally cloning only ordinary config/env from a source profile, copies `skills/cognitive-os/`, and configures the local model.
-- `preflight` records Hermes version, profile/skill visibility, MCP list, Ollama model visibility and candidate SHA.
+- `prepare` creates the named profile if absent, optionally cloning only ordinary config/env from a source profile, copies `skills/cognitive-os/`, and configures the explicit remote provider/model.
+- `preflight` records Hermes version, profile/skill visibility, MCP list, remote provider configuration and candidate SHA.
 
 - [ ] **Step 1: Add command-plan tests using a fake subprocess runner**
 
@@ -103,7 +108,7 @@ Assert profile creation never changes the sticky active profile and no NotebookL
 
 - [ ] **Step 3: Implement `prepare` and `preflight`**
 
-Use `hermes -p <profile>` for profile-scoped operations. Copy the Skill directly into the isolated profile after resolving `$HERMES_HOME`/default home. Configure `model.default`, `model.provider`, `model.base_url`, `model.context_length`, and `model.ollama_num_ctx`.
+Use `hermes -p <profile>` for profile-scoped operations. Copy the Skill directly into the isolated profile after resolving `$HERMES_HOME`/default home. Configure `model.default`, `model.provider`, `model.base_url`, and `model.context_length` from explicit remote-provider inputs.
 
 - [ ] **Step 4: Run GREEN verification**
 

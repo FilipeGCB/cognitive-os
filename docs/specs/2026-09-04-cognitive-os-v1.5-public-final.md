@@ -2175,10 +2175,27 @@ Executar Gate T e só então habilitar sharing privacy-preserving; se collector 
 - stop;
 - provider fallback.
 
+### Política de execução V1.5
+
+O Gate D não é executado por inferência local em CI. Pushes e pull requests
+devem usar apenas verificações determinísticas. Behavioral conformance pode ser
+executado separadamente por um workflow manual, mas somente com provider
+remoto/cloud, transporte, credencial, modelo SUT e grader independente
+explicitamente configurados. A interface de invocação deve ser provider-neutral
+e registrar identidade observada, seleção, cache, checkpoints e as fases SUT e
+grading separadas. Provider ausente, identidade não observada ou grader
+independente ausente produz `NOT_EXECUTED`/`UNAVAILABLE`; não existe fallback
+implícito para transporte local. `INCOMPLETE` e seleção parcial não podem ser
+promovidos a `PASS`.
+
 ## Gate E — Hermes E2E
 - runtime evidence;
 - real tool invocation;
 - no false claims.
+
+Hermes também exige provider, modelo e endpoint explícitos. Sem provider remoto
+configurado, o harness registra `NOT_CALLED`/`UNAVAILABLE` e não inicia uma
+execução de modelo. O Gate E continua uma prova de host distinta do Gate D.
 
 ## Gate F — Work smoke
 - testar a skill/pacote realmente instalado no Work;
@@ -2198,6 +2215,9 @@ Executar Gate T e só então habilitar sharing privacy-preserving; se collector 
 - Gates A–F críticos verdes;
 - Gate T verde **ou** sharing explicitamente `UNAVAILABLE`;
 - evidence pack ligado ao mesmo candidate SHA/version/SUT/grader/manifests;
+- behavioral conformance só pode ser alegada com evidence `COMPLETE`/`PASS` da
+  suíte V1.5 final de 58 casos, identidades observadas e provenance validada
+  pelo release validator;
 - privacy;
 - changelog;
 - migration notes;
