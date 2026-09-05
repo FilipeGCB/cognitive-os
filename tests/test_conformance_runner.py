@@ -39,6 +39,15 @@ class ConformanceRunnerTests(unittest.TestCase):
         self.assertIn("exactly 1 must item", grade_prompt)
         self.assertIn("do not split one rubric item", grade_prompt)
 
+    def test_case_context_includes_operational_contracts_for_specialized_families(self):
+        telemetry_context = runner.context_for(["telemetry", "forensics"]).lower()
+        self.assertIn("allowlisted_sources", telemetry_context)
+        self.assertIn("k < 10", telemetry_context)
+        self.assertIn("actual bounded preview", telemetry_context)
+        distribution_context = runner.context_for(["distribution", "version", "host-portability"]).lower()
+        self.assertIn("distribution-manifest-v1.5", distribution_context)
+        self.assertIn("not_executed", distribution_context)
+
     def test_deterministic_response_flags_expose_truncation_and_unobserved_identity(self):
         flags = runner.response_flags(
             "run_id: CRR-20260904-120000-ABCD\ncreated_at: 2026-09-04T12:00:00Z",

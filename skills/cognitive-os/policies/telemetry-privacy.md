@@ -30,6 +30,16 @@ connectors, private repositories and client systems are reduced to
 The shared client rejects unknown fields, invalid enums and oversized payloads.
 Sanitization is a second defense, not permission to capture unrestricted input.
 
+When explaining or executing the send checkpoint, construct and show the
+actual bounded preview object (label synthetic values when the host has not
+provided runtime values), then obtain explicit consent for that preview and
+validate the same object immediately before sending. An endpoint existing is
+not consent and a preview is not a send.
+
+Aggregates use only the allowlisted dimensions and suppress every cohort with
+`k < 10` by default (or a stricter configured threshold). Never introduce an
+arbitrary group-by or a custom capability/client name as a dimension.
+
 ## Excluded fields
 
 Never share or persist in the shared event: user prompts, assistant responses,

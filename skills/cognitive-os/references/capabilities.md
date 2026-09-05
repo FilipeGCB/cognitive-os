@@ -105,3 +105,9 @@ availability | auth_state | run_consent_state | invocation | result
 Do not infer `CALLED` from a listing, documentation or model claim. An
 account-bound capability may be `AVAILABLE/AUTHENTICATED` while remaining
 `NOT_GRANTED/NOT_CALLED` for this run.
+
+A read-only local capability that is available within observed host
+permissions does not require unrelated external-account or installation
+consent. Use it only on the observed surface, record the invocation/result,
+and ask for consent when a local host policy or a materially consequential
+side effect actually makes it necessary.

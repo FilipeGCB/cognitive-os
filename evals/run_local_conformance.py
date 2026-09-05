@@ -571,6 +571,31 @@ def context_for(tags: list[str]) -> str:
             SKILL / "policies" / "capability-security.md",
             SKILL / "references" / "capabilities.md",
         ]
+    if tagset & {"telemetry", "privacy", "forensics"}:
+        paths += [
+            SKILL / "policies" / "telemetry-privacy.md",
+            SKILL / "policies" / "diagnostic-sharing.md",
+            SKILL / "schemas" / "cognitive-usage-trace.md",
+            SKILL / "schemas" / "forensic-diagnostic-manifest.md",
+            ROOT / "telemetry" / "defaults.json",
+        ]
+    if tagset & {"host-portability"}:
+        paths += [
+            ROOT / "docs" / "HOST_MATRIX_V1_5.md",
+            ROOT / "docs" / "evidence" / "work-v1.5-smoke-procedure.md",
+        ]
+    if tagset & {"distribution", "version"}:
+        paths += [
+            SKILL / "VERSION",
+            ROOT / "distribution" / "manifest.schema.json",
+            ROOT / "distribution" / "manifests" / "agent-skills.json",
+            ROOT / "distribution" / "manifests" / "openai.json",
+            ROOT / "distribution" / "manifests" / "claude.json",
+            ROOT / "distribution" / "manifests" / "gemini.json",
+            ROOT / "docs" / "reproducibility.md",
+        ]
+    if tagset & {"provider-resilience"}:
+        paths += [ROOT / "bootstrap" / "cognitive_os_resilience.py"]
     if tagset & AUDIT_TAGS:
         paths += [SKILL / "schemas" / "cognitive-run-record.md", SKILL / "references" / "output.md"]
     if any(tag.startswith("conclusion") or tag in {
@@ -585,7 +610,13 @@ def context_for(tags: list[str]) -> str:
         if path not in seen:
             seen.add(path)
             unique.append(path)
-    return "\n\n---\n\n".join(f"# FILE: {p.relative_to(SKILL)}\n{read(p)}" for p in unique)
+    def label(path: Path) -> str:
+        try:
+            return path.relative_to(SKILL).as_posix()
+        except ValueError:
+            return path.relative_to(ROOT).as_posix()
+
+    return "\n\n---\n\n".join(f"# FILE: {label(p)}\n{read(p)}" for p in unique)
 
 
 def response_num_predict_for(tags: list[str]) -> int:

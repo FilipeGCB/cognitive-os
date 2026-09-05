@@ -37,6 +37,12 @@ When unresolved ambiguity can materially change the framing, evidence needs, alt
 
 Do not interview by ritual. If the request is already clear enough to analyze safely, proceed.
 
+When the request itself supplies enough routing signal (for example, internal
+documents plus current external sources must be reconciled over repeated
+queries), route directly and state the route. Do not ask for topic, URL or
+scope details merely to postpone a route that is already determined; identify
+the remaining material gap and the smallest missing input instead.
+
 Never claim `created`, `installed`, `executed`, `changed`, `researched`, or equivalent without observable evidence that the action actually occurred.
 
 ## Adaptive flow
@@ -77,6 +83,11 @@ Use `references/source-authority.md` when the answer depends on current external
 
 Current implementation/state should be observed from the authoritative system when material. Historical context and model knowledge do not silently replace missing current evidence.
 
+If a canonical `VERSION` and a distribution wrapper disagree, treat this as a
+version-synchronization failure: the candidate is not a coherent release until
+the manifests are reconciled. Do not silently relabel an older wrapper or
+claim that a rolling mismatch is harmless.
+
 External mutable claims such as current price, limits, license, terms, product status, version or capability availability require current evidence when that could change the decision.
 
 ## Capability truth
@@ -115,6 +126,10 @@ condition` before deep research. Reassess at soft 50%/80% checkpoints and
 reserve capacity for validation, contradiction checks, challenge and closure.
 If a hard limit or rate limit is reached, freeze search, synthesize observed
 evidence, record the gap and close with the next proof instead of aborting.
+
+At a compaction event, make the checkpoint observable: record that compaction
+occurred, reconsider Grounded Corpus, traceability and the remaining budget,
+and then preserve the source/evidence boundary before continuing or closing.
 
 ## Methods
 
@@ -173,6 +188,12 @@ drift and limitations when the host cannot intercept mutation. “Nothing
 installed” does not mean “nothing changed”; record file, config, package,
 connection and credential side effects separately.
 
+When a provider or tool fails after useful observable work was persisted, do
+not erase or restart that work. Use an authorized fallback when available;
+otherwise close from the persisted state with completed work, failure,
+material gap and next proof. A closure may be `RUN_STATUS=COMPLETE` while its
+execution integrity or decision state remains partial/test-required.
+
 ## Flight Recorder and privacy
 
 The optional Flight Recorder is constructed by allowlist and records how the
@@ -186,6 +207,11 @@ continues the run normally. Forensic diagnostics are separate, bounded by
 run/window/allowlisted sources/session IDs, and opt-in.
 
 Use `schemas/cognitive-run-record.md` for observable audit evidence.
+
+When an audit, telemetry or diagnostic request asks for a preview, scope or
+closure, produce the bounded concrete artifact/template requested (with
+synthetic values clearly labelled when no runtime value exists), not only a
+policy summary. A template must never be presented as a host-observed result.
 
 ## Output
 

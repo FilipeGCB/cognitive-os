@@ -10,6 +10,15 @@ Collection is bounded by:
 run_id + temporal window + allowlisted log sources + known session/task IDs
 ```
 
+The observable scope should name all four bounds explicitly, for example:
+
+```text
+run_id: host-observed run identifier, or omitted when unavailable
+time_window: bounded started_at/ended_at
+allowlisted_sources: named flight-recorder/provider/adapter logs only
+session_task_ids: host-observed IDs only
+```
+
 The host adapter must enumerate the allowlisted sources before collection. It
 must not scan the machine, accept arbitrary globs, or collect a whole home,
 repository or conversation store. The collector contract is:

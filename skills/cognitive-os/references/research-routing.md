@@ -46,6 +46,15 @@ Use when the need is structured/multi-page collection that ordinary Web Search d
 
 A research tool does not make a weak source authoritative. Prefer primary/current sources for mutable material claims and preserve contradictions.
 
+## Direct routing signals
+
+When a request already states that internal documents and current external
+sources must be reconciled across multiple queries, route to Grounded Corpus
+Research immediately (while retaining separate internal/external evidence).
+Do not ask for the subject, URLs or a corpus inventory before stating that
+route; those details are inputs to the plan, not a reason to hide a determined
+capability route.
+
 ## Stop
 
 Stop research when:
@@ -86,3 +95,8 @@ freeze search → synthesize evidence already obtained → record limitation/gap
 
 Do not claim grounded-corpus use without a runtime source read. If the corpus is
 unavailable, use an authorized composed fallback and preserve the limitation.
+
+When compaction occurs, record a checkpoint that explicitly revisits the
+grounded-corpus choice, source traceability and remaining budget. The
+checkpoint is an observable control point, not permission to silently drop
+provenance.
