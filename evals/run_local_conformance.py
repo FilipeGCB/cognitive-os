@@ -1000,6 +1000,7 @@ def sut_header(
         "sut_model": model,
         "sut_model_identity": model_identity,
         "grader_independent": False,
+        "context_window": context_window,
     }
 
 
@@ -1145,6 +1146,7 @@ def run_grade_selection(
         "grader_model": grader_model,
         "grader_model_identity": grader_identity,
         "grader_independent": grader_model != str(sut_header_document.get("sut_model", "")),
+        "context_window": context_window,
     }
     checkpoint_expected = {key: header[key] for key in header}
     results = checkpoint_entries(checkpoint_path, checkpoint_expected, RUNNER_SCHEMA)
