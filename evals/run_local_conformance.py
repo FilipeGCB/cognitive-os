@@ -580,11 +580,10 @@ def context_for(tags: list[str]) -> str:
             ROOT / "telemetry" / "defaults.json",
         ]
     if tagset & {"machine-contracts", "state-semantics"}:
-        paths += [
-            SKILL / "schemas" / "cognitive-run-record.md",
-            SKILL / "schemas" / "capability-decision-record.md",
-            ROOT / "bootstrap" / "cognitive_os_contracts.py",
-        ]
+        if "machine-contracts" in tagset:
+            paths += [SKILL / "schemas" / "capability-decision-record.md"]
+        if "state-semantics" in tagset:
+            paths += [SKILL / "schemas" / "cognitive-run-record.md"]
     if tagset & {"host-portability"}:
         paths += [
             ROOT / "docs" / "HOST_MATRIX_V1_5.md",
