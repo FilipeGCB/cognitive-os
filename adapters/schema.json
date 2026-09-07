@@ -1,22 +1,57 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Cognitive OS Adapter Manifest",
+  "title": "Cognitive OS Adapter and Discovery Registry",
   "type": "object",
-  "required": ["id", "capability", "name", "source", "version", "license", "status", "install", "auth", "footprint", "permissions", "reversible", "gauntlet"],
+  "required": ["schema_version", "discovery_assets", "adapters"],
   "properties": {
-    "id": {"type": "string"},
-    "capability": {"type": "string"},
-    "name": {"type": "string"},
-    "source": {"type": "string"},
-    "version": {"type": ["string", "null"]},
-    "license": {"type": ["string", "null"]},
-    "status": {"enum": ["candidate", "tested", "supported", "rejected"]},
-    "install": {"type": "object"},
-    "auth": {"type": "object"},
-    "footprint": {"type": "object"},
-    "permissions": {"type": "object"},
-    "reversible": {"type": "boolean"},
-    "gauntlet": {"type": "object"}
+    "schema_version": {"const": "cognitive-os-adapter-registry-v1.5"},
+    "discovery_assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "asset_type", "source", "owner", "repository", "maintainer", "version", "license", "mechanism", "hosts", "status", "identity_status", "provenance", "requires_consent"],
+        "properties": {
+          "id": {"type": "string"},
+          "asset_type": {"enum": ["EXTERNAL_SKILL_DISCOVERY", "EXTERNAL_MCP_DISCOVERY"]},
+          "source": {"type": ["string", "null"]},
+          "owner": {"type": ["string", "null"]},
+          "repository": {"type": ["string", "null"]},
+          "maintainer": {"type": ["string", "null"]},
+          "version": {"type": ["string", "null"]},
+          "license": {"type": ["string", "null"]},
+          "mechanism": {"type": ["string", "null"]},
+          "hosts": {"type": "array", "items": {"type": "string"}},
+          "status": {"enum": ["APPROVED", "BLOCKED", "UNAVAILABLE"]},
+          "identity_status": {"enum": ["PROVEN", "UNPROVEN"]},
+          "provenance": {"type": "string"},
+          "requires_consent": {"type": "boolean"}
+        }
+      }
+    },
+    "adapters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "capability", "name", "source", "version", "license", "status", "install", "auth", "footprint", "permissions", "reversible", "gauntlet"],
+        "properties": {
+          "id": {"type": "string"},
+          "capability": {"type": "string"},
+          "name": {"type": "string"},
+          "source": {"type": "string"},
+          "version": {"type": ["string", "null"]},
+          "license": {"type": ["string", "null"]},
+          "status": {"enum": ["candidate", "tested", "supported", "rejected"]},
+          "install": {"type": "object"},
+          "auth": {"type": "object"},
+          "footprint": {"type": "object"},
+          "permissions": {"type": "object"},
+          "reversible": {"type": "boolean"},
+          "gauntlet": {"type": "object"}
+        },
+        "additionalProperties": true
+      }
+    }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

@@ -1,0 +1,275 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cognitive-os.dev/schemas/cognitive-run-record-v1.5.json",
+  "title": "Cognitive OS V1.5 Cognitive Run Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id", "schema_version", "created_at", "host", "surface", "depth",
+    "flow_coverage", "execution_integrity", "run_status", "decision_state",
+    "provenance", "phase_ledger", "conditional_branch_ledger", "capability_ledger",
+    "method_ledger", "evidence_ledger", "gap_failure_ledger", "challenge_ledger",
+    "mutation_ledger", "persistent_side_effects", "research_budget",
+    "provider_host_failures", "stop", "next_proof", "telemetry"
+  ],
+  "properties": {
+    "id": {"type": "string", "pattern": "^CRR-[0-9]{8}-[0-9]{6}-[A-Za-z0-9]{4,16}$"},
+    "schema_version": {"const": "cognitive-os-run-record-v1.5"},
+    "created_at": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[^\\r\\n]+(?:Z|[+-][0-9]{2}:[0-9]{2})$"},
+    "finished_at": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[^\\r\\n]+(?:Z|[+-][0-9]{2}:[0-9]{2})$"},
+    "host": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[^\\r\\n]+$"},
+    "surface": {"type": "string", "minLength": 1, "maxLength": 256, "pattern": "^[^\\r\\n]+$"},
+    "project": {"type": "string", "maxLength": 256, "pattern": "^[^\\r\\n]*$"},
+    "mode": {"enum": ["normal", "full-flow-audit"]},
+    "depth": {"enum": ["fast", "normal", "deep", "board360"]},
+    "sensitivity": {"enum": ["internal", "restricted-reference-only"]},
+    "candidate_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "flow_coverage": {"enum": ["COMPLETE", "PARTIAL", "BLOCKED"]},
+    "execution_integrity": {"enum": ["COMPLETE", "PARTIAL", "FAILED", "BLOCKED"]},
+    "run_status": {"enum": ["COMPLETE", "PARTIAL", "FAILED", "BLOCKED"]},
+    "decision_state": {"enum": [
+      "READY_TO_DECIDE", "DECIDED", "TEST_REQUIRED", "MORE_EVIDENCE_REQUIRED",
+      "MORE_RESEARCH_REQUIRED", "RECOMMENDATION_ONLY", "BLOCKED",
+      "NO_ACTION_RECOMMENDED", "READY"
+    ]},
+    "provenance": {"enum": ["HOST_OBSERVED", "TOOL_OBSERVED", "REPOSITORY_OBSERVED", "USER_SUPPLIED", "MODEL_SYNTHESIZED", "UNKNOWN"]},
+    "phase_ledger": {"type": "array", "items": {"$ref": "#/$defs/phase"}},
+    "conditional_branch_ledger": {"type": "array", "items": {"$ref": "#/$defs/branch"}},
+    "capability_ledger": {"type": "array", "items": {"$ref": "#/$defs/capability"}},
+    "method_ledger": {"type": "array", "items": {"$ref": "#/$defs/method"}},
+    "evidence_ledger": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
+    "gap_failure_ledger": {"type": "array", "items": {"$ref": "#/$defs/gap"}},
+    "challenge_ledger": {"type": "array", "items": {"$ref": "#/$defs/challenge"}},
+    "mutation_ledger": {"type": "array", "items": {"$ref": "#/$defs/mutation"}},
+    "persistent_side_effects": {"type": "array", "items": {"$ref": "#/$defs/sideEffect"}},
+    "research_budget": {"$ref": "#/$defs/researchBudget"},
+    "provider_host_failures": {"type": "array", "items": {"$ref": "#/$defs/providerFailure"}},
+    "stop": {"$ref": "#/$defs/stop"},
+    "next_proof": {"anyOf": [{"$ref": "#/$defs/nextProof"}, {"type": "null"}]},
+    "telemetry": {"$ref": "#/$defs/telemetry"}
+  },
+  "$defs": {
+    "boundedText": {"type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^[^\\r\\n\\u0000]+$"},
+    "ref": {"type": "string", "minLength": 2, "maxLength": 512, "pattern": "^[A-Za-z0-9][A-Za-z0-9+._:/#?=&@%~,'()\\-]+$"},
+    "refs": {"type": "array", "items": {"$ref": "#/$defs/ref"}, "uniqueItems": true},
+    "phase": {
+      "type": "object", "additionalProperties": false,
+      "required": ["phase", "status", "evidence_refs", "material_gap"],
+      "properties": {
+        "phase": {"$ref": "#/$defs/boundedText"},
+        "status": {"enum": ["COMPLETE", "PARTIAL", "BLOCKED", "NOT_APPLICABLE"]},
+        "evidence_refs": {"$ref": "#/$defs/refs"},
+        "material_gap": {"type": "string", "maxLength": 512, "pattern": "^[^\\r\\n\\u0000]*$"},
+        "provenance": {"enum": ["HOST_OBSERVED", "TOOL_OBSERVED", "REPOSITORY_OBSERVED", "USER_SUPPLIED", "MODEL_SYNTHESIZED", "UNKNOWN"]}
+      }
+    },
+    "branch": {
+      "type": "object", "additionalProperties": false,
+      "required": ["branch", "applicable", "status", "evidence_refs"],
+      "properties": {
+        "branch": {"$ref": "#/$defs/boundedText"},
+        "applicable": {"type": "boolean"},
+        "status": {"enum": ["COMPLETE", "PARTIAL", "BLOCKED", "NOT_APPLICABLE"]},
+        "evidence_refs": {"$ref": "#/$defs/refs"},
+        "reason": {"type": "string", "maxLength": 1024, "pattern": "^[^\\r\\n\\u0000]*$"}
+      }
+    },
+    "provenance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["provenance_class"],
+      "properties": {
+        "provenance_class": {"enum": ["HOST_OBSERVED", "TOOL_OBSERVED", "REPOSITORY_OBSERVED", "USER_SUPPLIED", "MODEL_SYNTHESIZED", "UNKNOWN"]},
+        "source": {"$ref": "#/$defs/ref"},
+        "observed_at": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[^\\r\\n]+(?:Z|[+-][0-9]{2}:[0-9]{2})$"}
+      }
+    },
+    "capability": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "capability", "category", "need", "discovery_class", "availability", "auth_state",
+        "run_consent_state", "invocation", "result", "source_or_adapter", "candidate_provenance",
+        "consent_required", "consent_state", "fallback", "materiality", "evidence_refs"
+      ],
+      "properties": {
+        "capability": {"$ref": "#/$defs/boundedText"},
+        "category": {"$ref": "#/$defs/boundedText"},
+        "need": {"$ref": "#/$defs/boundedText"},
+        "discovery_class": {"enum": ["EXISTING_CAPABILITY", "LOCAL_SKILL_DISCOVERY", "LOCAL_TOOL_DISCOVERY", "LOCAL_CONNECTOR_DISCOVERY", "EXTERNAL_SKILL_DISCOVERY", "EXTERNAL_MCP_DISCOVERY", "MANUAL_FALLBACK"]},
+        "availability": {"enum": ["AVAILABLE", "UNAVAILABLE", "UNKNOWN"]},
+        "auth_state": {"enum": ["NOT_REQUIRED", "REQUIRED_NOT_AUTHENTICATED", "AUTHENTICATED", "UNKNOWN"]},
+        "run_consent_state": {"enum": ["NOT_REQUIRED", "NOT_ASKED", "NOT_GRANTED", "DECLINED", "GRANTED", "REVOKED"]},
+        "invocation": {"enum": ["CALLED", "NOT_CALLED"]},
+        "result": {"enum": ["SUCCESS", "PARTIAL", "TRUNCATED", "RATE_LIMITED", "UNAVAILABLE", "BLOCKED", "FAILED", "NOT_APPLICABLE"]},
+        "source_or_adapter": {"$ref": "#/$defs/boundedText"},
+        "candidate_provenance": {"$ref": "#/$defs/provenance"},
+        "consent_required": {"type": "boolean"},
+        "consent_state": {"enum": ["NOT_REQUIRED", "NOT_ASKED", "NOT_GRANTED", "DECLINED", "GRANTED", "REVOKED"]},
+        "fallback": {"type": "string", "maxLength": 512, "pattern": "^[^\\r\\n\\u0000]*$"},
+        "materiality": {"enum": ["MATERIAL", "NON_MATERIAL", "UNKNOWN"]},
+        "evidence_refs": {"$ref": "#/$defs/refs"}
+      },
+      "allOf": [
+        {"if": {"properties": {"invocation": {"const": "CALLED"}}}, "then": {"properties": {"evidence_refs": {"minItems": 1}}}},
+        {"if": {"properties": {"result": {"const": "SUCCESS"}}}, "then": {"properties": {"evidence_refs": {"minItems": 1}}}}
+      ]
+    },
+    "method": {
+      "type": "object", "additionalProperties": false,
+      "required": ["method", "used", "reason", "observable_result"],
+      "properties": {
+        "method": {"$ref": "#/$defs/boundedText"},
+        "used": {"type": "boolean"},
+        "reason": {"$ref": "#/$defs/boundedText"},
+        "observable_result": {"$ref": "#/$defs/boundedText"},
+        "evidence_refs": {"$ref": "#/$defs/refs"}
+      }
+    },
+    "evidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["claim_ref", "classification", "source_ref", "provenance"],
+      "properties": {
+        "claim_ref": {"$ref": "#/$defs/boundedText"},
+        "classification": {"enum": ["FACT", "EVIDENCE", "INFERENCE", "HYPOTHESIS", "ASSUMPTION", "PREFERENCE", "UNKNOWN", "CONTRADICTION"]},
+        "source_ref": {"$ref": "#/$defs/ref"},
+        "ref_date_version": {"type": "string", "maxLength": 256, "pattern": "^[^\\r\\n\\u0000]*$"},
+        "provenance": {"enum": ["HOST_OBSERVED", "TOOL_OBSERVED", "REPOSITORY_OBSERVED", "USER_SUPPLIED", "MODEL_SYNTHESIZED", "UNKNOWN"]},
+        "note": {"type": "string", "maxLength": 512, "pattern": "^[^\\r\\n\\u0000]*$"}
+      }
+    },
+    "gap": {
+      "type": "object", "additionalProperties": false,
+      "required": ["gap", "state", "recovery_attempted", "evidence_still_missing", "impact"],
+      "properties": {
+        "gap": {"$ref": "#/$defs/boundedText"},
+        "state": {"enum": ["UNKNOWN", "PARTIAL", "BLOCKED", "RATE_LIMITED", "FAILED", "TRUNCATED", "UNAVAILABLE"]},
+        "recovery_attempted": {"type": "boolean"},
+        "evidence_still_missing": {"$ref": "#/$defs/refs"},
+        "impact": {"enum": ["MATERIAL", "NON_MATERIAL", "UNKNOWN"]}
+      }
+    },
+    "challenge": {
+      "type": "object", "additionalProperties": false,
+      "required": ["attack", "evidence_or_plausibility", "what_would_break", "recommendation_impact", "mitigation_or_next_proof"],
+      "properties": {
+        "attack": {"$ref": "#/$defs/boundedText"},
+        "evidence_or_plausibility": {"$ref": "#/$defs/boundedText"},
+        "what_would_break": {"$ref": "#/$defs/boundedText"},
+        "recommendation_impact": {"enum": ["maintains", "weakens", "conditions", "reverses"]},
+        "mitigation_or_next_proof": {"$ref": "#/$defs/boundedText"},
+        "evidence_refs": {"$ref": "#/$defs/refs"}
+      }
+    },
+    "mutation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["mutation_id", "type", "target", "before_version_or_hash", "after_version_or_hash", "trigger", "applied_at", "applied_during_active_run", "validation", "affected_phases", "rollback_available", "status"],
+      "properties": {
+        "mutation_id": {"$ref": "#/$defs/boundedText"},
+        "type": {"enum": ["SKILL_MUTATED", "REFERENCE_MUTATED", "POLICY_MUTATED", "CONFIG_CHANGED", "PACKAGE_INSTALLED", "MCP_INSTALLED", "CONNECTION_CREATED", "FILE_CREATED", "FILE_MODIFIED", "CREDENTIAL_STATE_CHANGED", "OTHER_PERSISTENT_SIDE_EFFECT"]},
+        "target": {"$ref": "#/$defs/boundedText"},
+        "before_version_or_hash": {"$ref": "#/$defs/boundedText"},
+        "after_version_or_hash": {"$ref": "#/$defs/boundedText"},
+        "trigger": {"$ref": "#/$defs/boundedText"},
+        "applied_at": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[^\\r\\n]+(?:Z|[+-][0-9]{2}:[0-9]{2})$"},
+        "applied_during_active_run": {"type": "boolean"},
+        "validation": {"enum": ["PASS", "FAIL", "PARTIAL", "UNKNOWN", "NOT_APPLICABLE"]},
+        "affected_phases": {"type": "array", "items": {"$ref": "#/$defs/boundedText"}},
+        "rollback_available": {"type": "boolean"},
+        "status": {"enum": ["STAGED", "APPLIED", "BLOCKED", "REJECTED", "REVERTED"]}
+      }
+    },
+    "sideEffect": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "observed", "evidence_refs"],
+      "properties": {
+        "type": {"enum": ["SKILL_MUTATED", "REFERENCE_MUTATED", "POLICY_MUTATED", "CONFIG_CHANGED", "PACKAGE_INSTALLED", "MCP_INSTALLED", "CONNECTION_CREATED", "FILE_CREATED", "FILE_MODIFIED", "CREDENTIAL_STATE_CHANGED", "OTHER_PERSISTENT_SIDE_EFFECT"]},
+        "observed": {"type": "boolean"},
+        "target_class": {"type": "string", "maxLength": 128, "pattern": "^[^\\r\\n\\u0000]*$"},
+        "evidence_refs": {"$ref": "#/$defs/refs"}
+      }
+    },
+    "researchBudget": {
+      "type": "object", "additionalProperties": false,
+      "required": ["planned", "consumed", "checkpoints", "stop_reason"],
+      "properties": {
+        "planned": {"$ref": "#/$defs/budgetCounters"},
+        "consumed": {"$ref": "#/$defs/budgetCounters"},
+        "checkpoints": {"type": "array", "items": {"$ref": "#/$defs/checkpoint"}},
+        "stop_reason": {"$ref": "#/$defs/boundedText"}
+      }
+    },
+    "budgetCounters": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "web_calls": {"$ref": "#/$defs/counter"},
+        "source_count": {"$ref": "#/$defs/counter"},
+        "elapsed_seconds": {"$ref": "#/$defs/counter"},
+        "context_fraction": {"$ref": "#/$defs/counter"}
+      }
+    },
+    "counter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["value", "soft_limit", "hard_limit", "observable"],
+      "properties": {
+        "value": {"type": ["number", "null"], "minimum": 0},
+        "soft_limit": {"type": ["number", "null"], "minimum": 0},
+        "hard_limit": {"type": ["number", "null"], "minimum": 0},
+        "observable": {"type": "boolean"}
+      }
+    },
+    "checkpoint": {
+      "type": "object", "additionalProperties": false,
+      "required": ["at", "decision", "reserved_for_closure"],
+      "properties": {
+        "at": {"enum": ["50_PERCENT", "80_PERCENT", "BEFORE_HARD_LIMIT", "COMPACTION", "MIGRATION_TRIGGER"]},
+        "decision": {"enum": ["CONTINUE", "MIGRATE_TO_CORPUS", "STOP_RESEARCH_AND_TEST", "FREEZE_AND_SYNTHESIZE", "UNKNOWN"]},
+        "reserved_for_closure": {"type": "boolean"}
+      }
+    },
+    "providerFailure": {
+      "type": "object", "additionalProperties": false,
+      "required": ["provider_or_host", "failure_class", "state", "fallback", "closure_emitted"],
+      "properties": {
+        "provider_or_host": {"$ref": "#/$defs/boundedText"},
+        "failure_class": {"enum": ["UNSUPPORTED_PARAMETER", "RATE_LIMITED", "TIMEOUT", "TRUNCATED", "PROVIDER_ERROR", "TOOL_ERROR", "UNKNOWN"]},
+        "state": {"enum": ["AVAILABLE", "UNAVAILABLE", "PARTIAL", "FAILED", "BLOCKED", "UNKNOWN"]},
+        "fallback": {"enum": ["NONE", "SUPPORTED_SETTING", "ALTERNATE_PROVIDER", "PERSISTED_RUN_STATE", "MANUAL_NEXT_PROOF", "UNKNOWN"]},
+        "closure_emitted": {"type": "boolean"}
+      }
+    },
+    "stop": {
+      "type": "object", "additionalProperties": false,
+      "required": ["state", "reason"],
+      "properties": {
+        "state": {"enum": ["STOP", "CONTINUE", "STOP_RESEARCH_AND_TEST"]},
+        "reason": {"$ref": "#/$defs/boundedText"},
+        "material_unknowns_remaining": {"type": "boolean"},
+        "budget_consumed": {"type": "string", "maxLength": 512, "pattern": "^[^\\r\\n\\u0000]*$"}
+      }
+    },
+    "nextProof": {
+      "type": "object", "additionalProperties": false,
+      "required": ["hypothesis", "question_tested", "smallest_experiment", "metric", "information_value"],
+      "properties": {
+        "hypothesis": {"$ref": "#/$defs/boundedText"},
+        "question_tested": {"$ref": "#/$defs/boundedText"},
+        "smallest_experiment": {"$ref": "#/$defs/boundedText"},
+        "data_needed": {"type": "string", "maxLength": 512, "pattern": "^[^\\r\\n\\u0000]*$"},
+        "metric": {"$ref": "#/$defs/boundedText"},
+        "proposed_threshold": {"type": "string", "maxLength": 256, "pattern": "^[^\\r\\n\\u0000]*$"},
+        "information_value": {"enum": ["HIGH", "MEDIUM", "LOW"]},
+        "what_changes_if_pass": {"$ref": "#/$defs/boundedText"},
+        "what_changes_if_fail": {"$ref": "#/$defs/boundedText"}
+      }
+    },
+    "telemetry": {
+      "type": "object", "additionalProperties": false,
+      "required": ["mode", "state"],
+      "properties": {
+        "mode": {"enum": ["OFF", "LOCAL_DIAGNOSTICS", "SHARE_PRIVACY_PRESERVING_DIAGNOSTICS"]},
+        "state": {"enum": ["NOT_CONFIGURED", "AVAILABLE", "UNAVAILABLE", "DECLINED", "REVOKED", "LOCAL_ONLY", "SHARE_APPROVED"]},
+        "trace_ref": {"$ref": "#/$defs/ref"},
+        "consent_policy_version": {"type": "string", "maxLength": 128, "pattern": "^[^\\r\\n\\u0000]*$"}
+      }
+    }
+  }
+}

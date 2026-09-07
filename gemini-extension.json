@@ -1,5 +1,5 @@
 {
   "name": "cognitive-os",
-  "version": "1.4.0-dev",
+  "version": "1.5.0-dev",
   "description": "Portable decision layer for maturing decisions before consequential action. Bundles the canonical skill under skills/cognitive-os."
 }

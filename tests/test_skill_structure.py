@@ -23,7 +23,7 @@ class SkillStructureTests(unittest.TestCase):
 
     def test_public_skill_has_no_private_runtime_dependency(self):
         text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
-        forbidden = ["FilipeGCB/obsidian-notes", "Host A", "GPT privado", "Vivo"]
+        forbidden = ["private-vault-repository-marker", "Host A", "GPT privado", "Vivo"]
         for token in forbidden:
             self.assertNotIn(token, text)
 
@@ -40,8 +40,8 @@ class SkillStructureTests(unittest.TestCase):
         for token in required:
             self.assertIn(token, text)
 
-    def test_stable_version_is_explicit(self):
-        self.assertEqual((SKILL / "VERSION").read_text(encoding="utf-8").strip(), "1.4.0")
+    def test_development_version_is_explicit(self):
+        self.assertEqual((SKILL / "VERSION").read_text(encoding="utf-8").strip(), "1.5.0-dev")
 
 
 if __name__ == "__main__":

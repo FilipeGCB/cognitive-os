@@ -1,0 +1,152 @@
+{
+  "schema_version": "cognitive-os-release-evidence-v1.5",
+  "repository": "FilipeGCB/cognitive-os",
+  "candidate_sha": "a51407d4c92ef08689f5a7bd2a0aad43698c9681",
+  "version": "1.5.0-dev",
+  "source_tree_fingerprint": "877f7959303c30c60f333b5d86ff19a0c2dd2617fb17b2b54fb1cea069691766",
+  "manifests": [
+    {
+      "path": "distribution/manifests/agent-skills.json",
+      "sha256": "a40460d5e8a5a87497d383e7b0e5bbd02f796bb46a8c640bab0fa560a3698198",
+      "source_commit": "a51407d4c92ef08689f5a7bd2a0aad43698c9681",
+      "version": "1.5.0-dev"
+    },
+    {
+      "path": "distribution/manifests/openai.json",
+      "sha256": "4121617146cc38deb1a51fcfc0ac73bbdd277893d87a41c612587ab6d7cb388d",
+      "source_commit": "a51407d4c92ef08689f5a7bd2a0aad43698c9681",
+      "version": "1.5.0-dev"
+    },
+    {
+      "path": "distribution/manifests/claude.json",
+      "sha256": "7a8fb53f214dd3953a88c89f796ee75ff6c387eb5192b3125b2b168ab1f1290d",
+      "source_commit": "a51407d4c92ef08689f5a7bd2a0aad43698c9681",
+      "version": "1.5.0-dev"
+    },
+    {
+      "path": "distribution/manifests/gemini.json",
+      "sha256": "b490e20101cf8c26e018c63181c544bdfca28f836fbad98c0a07bdf6ee5396e6",
+      "source_commit": "a51407d4c92ef08689f5a7bd2a0aad43698c9681",
+      "version": "1.5.0-dev"
+    }
+  ],
+  "harness": {
+    "path": "evals/e2e/run_hermes_e2e.py",
+    "sha256": "e47be7002fb8f09005fe9aa63790521fc768485aac2531110141680021289b34",
+    "schema_version": "cognitive-os-hermes-e2e-v1.5"
+  },
+  "execution": {
+    "run_id": "CRR-20260905-014310-E3CB7365",
+    "started_at": "2026-09-04T22:43:10-03:00",
+    "finished_at": "2026-09-04T22:44:40-03:00",
+    "candidate_sha": "a51407d4c92ef08689f5a7bd2a0aad43698c9681",
+    "artifact_refs": [
+      "docs/specs/2026-09-04-cognitive-os-v1.5-public-final.md",
+      "evals/run_local_conformance.py",
+      "evals/v1.5-cases.json",
+      "evals/v1.5-output-cases.json",
+      "evals/e2e/run_hermes_e2e.py",
+      "distribution/manifests/agent-skills.json",
+      "skills/cognitive-os/schemas/release-evidence-record.schema.json",
+      "telemetry/defaults.json",
+      "tools/validate_release_evidence.py"
+    ],
+    "host_observed_identity": true
+  },
+  "sut_models": [
+    "gemma4:26b-a4b-it-qat",
+    "qwen3.8:27b"
+  ],
+  "grader_models": [
+    "qwen3.8:27b",
+    "gemma4:26b-a4b-it-qat"
+  ],
+  "runtime_hosts": [
+    "Hermes Agent v0.20.0",
+    "Ollama v0.32.13",
+    "generic host contract"
+  ],
+  "tests": {
+    "total": 157,
+    "passed": 157,
+    "failed": 0,
+    "critical_failures": [],
+    "conformance_schema": "cognitive-os-local-conformance-v3",
+    "grader_independent": true,
+    "model_results": [
+      {
+        "sut": "gemma4:26b-a4b-it-qat",
+        "grader": "qwen3.8:27b",
+        "passed": 58,
+        "total": 58,
+        "critical_failures": [],
+        "truncated_cases": [],
+        "invented_identity_cases": []
+      },
+      {
+        "sut": "qwen3.8:27b",
+        "grader": "gemma4:26b-a4b-it-qat",
+        "passed": 14,
+        "total": 14,
+        "critical_failures": [],
+        "truncated_cases": [],
+        "invented_identity_cases": []
+      },
+      {
+        "sut": "gemma4:26b-a4b-it-qat",
+        "grader": "qwen3.8:27b",
+        "passed": 29,
+        "total": 29,
+        "critical_failures": [],
+        "truncated_cases": [],
+        "invented_identity_cases": []
+      }
+    ]
+  },
+  "critical_gates": {
+    "GATE_0_BASELINE_HARDENING": "PASS",
+    "GATE_1_MACHINE_CONTRACTS": "PASS",
+    "GATE_2_CAPABILITY_DISCOVERY": "PASS",
+    "GATE_3_RESEARCH_BUDGET": "PASS",
+    "GATE_4_STRATEGIC_RECONCILIATION": "PASS",
+    "GATE_5_SELF_IMPROVEMENT_SIDE_EFFECTS": "PASS",
+    "GATE_6_FLIGHT_RECORDER_LOCAL": "PASS",
+    "GATE_7_EVALS_DISTRIBUTION": "PASS",
+    "GATE_8_MULTI_MODEL_CONFORMANCE": "PASS",
+    "GATE_9_HERMES_E2E": "BLOCKED",
+    "GATE_10_WORK": "UNAVAILABLE",
+    "GATE_T_PUBLIC_TELEMETRY": "PASS",
+    "GATE_TC_COLLECTOR": "PARTIAL"
+  },
+  "hermes_e2e": {
+    "state": "BLOCKED",
+    "evidence_refs": ["docs/evidence/hermes-v1.5-candidate-a51407d.md"]
+  },
+  "work": {
+    "state": "UNAVAILABLE",
+    "evidence_refs": ["docs/evidence/work-v1.5-smoke-procedure.md"]
+  },
+  "distribution": {
+    "state": "PASS",
+    "evidence_refs": ["docs/evidence/distribution-v1.5.md"]
+  },
+  "telemetry": {
+    "state": "PARTIAL",
+    "evidence_refs": ["docs/evidence/gate-t-v1.5.md"]
+  },
+  "collector": {
+    "state": "PARTIAL",
+    "evidence_refs": [
+      "docs/evidence/gate-t-v1.5.md",
+      "docs/telemetry-collector-contract.md"
+    ]
+  },
+  "known_limitations": [
+    "The complete primary conformance gate is Gemma SUT with an independent Qwen grader; Qwen supplies independent critical-case coverage rather than a second full symmetric matrix.",
+    "Fresh Hermes E2E remains blocked because no MCP was configured and account-bound NotebookLM use was not explicitly authorized.",
+    "ChatGPT Work was not executable in this environment; its smoke procedure is documented but is not runtime evidence.",
+    "The exact identities of the originally intended Find Skills and Find MCP discovery assets remain unproven and no arbitrary substitute was pinned.",
+    "The public telemetry client passes Gate T but sharing remains OFF and UNAVAILABLE until an approved deployment endpoint and host send capability exist.",
+    "The private collector source and tests exist in a verified private repository, but no endpoint or production operations deployment is claimed."
+  ]
+}

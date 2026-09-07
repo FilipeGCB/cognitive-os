@@ -2,6 +2,19 @@
 
 All notable public Cognitive OS changes are recorded here.
 
+## 1.5.0-dev — 2026-09-04
+
+Development line; no stable release or tag is published by this branch.
+
+### Added
+
+- versioned V1.5 public specification and architecture gap analysis;
+- fail-closed account-bound capability and candidate-SHA release evidence contracts;
+- strict run, capability, forensic and usage-trace schemas with deterministic validators;
+- capability discovery 2.0, configurable research budgets, Web→Corpus routing and truth-domain reconciliation;
+- self-improvement governance, mutation/side-effect ledgers and provider closure contracts;
+- local Flight Recorder and opt-in privacy-preserving telemetry client (shared sender remains disabled until Gate T/deployment evidence).
+
 ## v1.4.0 — 2026-09-04
 
 ### Added

@@ -1,0 +1,38 @@
+{
+  "name": "cognitive-os",
+  "version": "1.5.0-dev",
+  "description": "Portable decision layer for maturing consequential decisions, with capability discovery and optional privacy-preserving diagnostics.",
+  "author": {
+    "name": "FilipeGCB",
+    "url": "https://github.com/FilipeGCB"
+  },
+  "homepage": "https://github.com/FilipeGCB/cognitive-os",
+  "repository": "https://github.com/FilipeGCB/cognitive-os",
+  "license": "Apache-2.0",
+  "keywords": [
+    "decision-making",
+    "agent-skills",
+    "capability-discovery",
+    "research",
+    "sensemaking",
+    "auditability"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Cognitive OS",
+    "shortDescription": "Think before you spec. Decide before you execute.",
+    "longDescription": "Mature consequential decisions before execution by separating evidence from assumptions, challenging the leading conclusion, discovering missing capabilities, and identifying the next useful proof.",
+    "developerName": "FilipeGCB",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://github.com/FilipeGCB/cognitive-os",
+    "privacyPolicyURL": "https://github.com/FilipeGCB/cognitive-os/blob/main/docs/telemetry-privacy-notice.md",
+    "termsOfServiceURL": "https://github.com/FilipeGCB/cognitive-os/blob/main/skills/cognitive-os/policies/installation-consent.md",
+    "defaultPrompt": [
+      "Use Cognitive OS to help me decide whether this idea is worth pursuing before I build it.",
+      "Use Cognitive OS to challenge this recommendation and tell me what evidence would change the decision.",
+      "Use Cognitive OS to identify a missing capability and discover an appropriate skill or MCP without installing an unreviewed candidate."
+    ]
+  }
+}

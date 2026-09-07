@@ -3,13 +3,25 @@ name: cognitive-os
 description: "Use to mature decisions before consequential action: reconstruct context, clarify the real problem, ground claims in evidence, choose proportional reasoning and research capabilities, challenge conclusions, identify the next useful proof, know when to stop, and hand off a clear recommendation without self-authorizing execution."
 ---
 
-# Cognitive OS
+# Cognitive OS V1.5
 
 ## Core rule
 
 Context before problem. Problem before solution. Evidence before confidence. Decision before execution. Textual policy is not technical enforcement.
 
 Cognitive OS is a host-neutral decision layer. It requests abstract capabilities and lets the current host map them to native tools, apps, plugins, MCPs, APIs or local adapters that are actually available.
+
+## V1.5 capability discovery and runtime truth
+
+Resolve a material capability gap in this order: inspect existing capability,
+discover local skills/tools/connectors, and consider approved external discovery
+only when it can materially reduce uncertainty. Find Skills and Find MCP are
+discovery mechanisms, not trusted candidates. Evaluate each candidate's
+provenance, license, version/ref, permissions, supply chain and Gauntlet
+independently. `npx`, `uvx`, `docker run`, a temporary MCP or downloaded script
+is still external execution and requires the same proportional security and
+consent gates. If external discovery is unavailable, say `UNAVAILABLE` and use
+an authorized fallback; never simulate a result.
 
 ## What it is
 
@@ -24,6 +36,12 @@ Do not silently invent the user's current intent.
 When unresolved ambiguity can materially change the framing, evidence needs, alternatives, scope or recommendation, read `references/discovery-interview.md` and ask the highest-value missing question first.
 
 Do not interview by ritual. If the request is already clear enough to analyze safely, proceed.
+
+When the request itself supplies enough routing signal (for example, internal
+documents plus current external sources must be reconciled over repeated
+queries), route directly and state the route. Do not ask for topic, URL or
+scope details merely to postpone a route that is already determined; identify
+the remaining material gap and the smallest missing input instead.
 
 Never claim `created`, `installed`, `executed`, `changed`, `researched`, or equivalent without observable evidence that the action actually occurred.
 
@@ -65,6 +83,11 @@ Use `references/source-authority.md` when the answer depends on current external
 
 Current implementation/state should be observed from the authoritative system when material. Historical context and model knowledge do not silently replace missing current evidence.
 
+If a canonical `VERSION` and a distribution wrapper disagree, treat this as a
+version-synchronization failure: the candidate is not a coherent release until
+the manifests are reconciled. Do not silently relabel an older wrapper or
+claim that a rolling mismatch is harmless.
+
 External mutable claims such as current price, limits, license, terms, product status, version or capability availability require current evidence when that could change the decision.
 
 ## Capability truth
@@ -76,6 +99,19 @@ For material/auditable capability use, distinguish:
 - `result = SUCCESS | PARTIAL | TRUNCATED | RATE_LIMITED | UNAVAILABLE | BLOCKED | FAILED | NOT_APPLICABLE`
 
 Availability is not execution. Only runtime-observed `AVAILABLE + CALLED + SUCCESS` supports an unqualified claim that the capability executed successfully.
+
+Keep `availability`, `auth_state`, `run_consent_state`, `invocation` and
+`result` separate. In particular, `AVAILABLE + AUTHENTICATED + NOT_GRANTED +
+NOT_CALLED` is available but not authorized for this run. Account-bound use
+requires explicit run consent. Use `UNKNOWN` when runtime observation is absent.
+
+Consent is proportional to the capability boundary. When the host has
+observed a read-only local capability as available and permitted, use it within
+that permission without asking for unrelated external-account or installation
+consent; record `run_consent_state: NOT_REQUIRED` when the contract applies.
+Do not apply the account-bound refusal rule to that local case. External,
+account-bound, persistent or consequential operations retain their explicit
+consent gate.
 
 Use the smallest sufficient capability. Prefer an already available native capability over installing a redundant companion.
 
@@ -89,6 +125,19 @@ Research is selected by need, not by brand.
 - structured multi-page extraction → Structured Crawl when ordinary search is insufficient
 
 NotebookLM is an important implementation of Grounded Corpus Research, not a dependency of the core. See `references/research-routing.md` and `references/capabilities.md`.
+
+For Deep/Board360/Full Flow, strongly consider a grounded corpus when evidence
+must be cross-compared, internal and external sources are combined, queries
+repeat, context/compaction grows, or the open-web search has converged. Plan
+`question → subquestions → source classes → expected evidence → budget → stop
+condition` before deep research. Reassess at soft 50%/80% checkpoints and
+reserve capacity for validation, contradiction checks, challenge and closure.
+If a hard limit or rate limit is reached, freeze search, synthesize observed
+evidence, record the gap and close with the next proof instead of aborting.
+
+At a compaction event, make the checkpoint observable: record that compaction
+occurred, reconsider Grounded Corpus, traceability and the remaining budget,
+and then preserve the source/evidence boundary before continuing or closing.
 
 ## Methods
 
@@ -135,7 +184,42 @@ When Full Flow/Audit is explicitly requested and the supplied observable state i
 
 At minimum, account for the relevant entries in the **Phase Ledger**, **Conditional Branch Ledger**, **Capability Ledger**, **Evidence Ledger**, and **Gap / Failure Ledger**, plus the final run and decision states. Record only observable facts, classifications, statuses, source/capability evidence and material gaps. Use `NOT_APPLICABLE`, `PARTIAL`, or `BLOCKED` rather than silently omitting relevant branches. Never reconstruct or persist private chain-of-thought to fill an audit field.
 
+V1.5 audit also accounts for the Method, Challenge, Mutation, Persistent Side
+Effects, Research Budget and Provider/Host Failure ledgers. Keep
+`FLOW_COVERAGE`, `EXECUTION_INTEGRITY`, `RUN_STATUS` and `DECISION_STATE`
+independent: `TEST_REQUIRED` is not a failure, and useful persisted work may
+close as `RUN_STATUS=COMPLETE` with `EXECUTION_INTEGRITY=PARTIAL`.
+
+If the host can self-improve, pin methodology version/hash for the run, stage
+and validate patches, and activate only after closure when possible. Record
+drift and limitations when the host cannot intercept mutation. “Nothing
+installed” does not mean “nothing changed”; record file, config, package,
+connection and credential side effects separately.
+
+When a provider or tool fails after useful observable work was persisted, do
+not erase or restart that work. Use an authorized fallback when available;
+otherwise close from the persisted state with completed work, failure,
+material gap and next proof. A closure may be `RUN_STATUS=COMPLETE` while its
+execution integrity or decision state remains partial/test-required.
+
+## Flight Recorder and privacy
+
+The optional Flight Recorder is constructed by allowlist and records how the
+run executed, not what the user researched. Shared telemetry defaults to `OFF`
+and requires preview plus explicit, revocable consent. Shared payloads contain
+only typed low-cardinality operational fields; never include prompts, responses,
+reasoning, documents, file content/names/paths, private URLs, client names,
+PII, credentials, cookies, tokens, detailed queries or free text. A host with
+no persistence/preview/send capability reports telemetry as `UNAVAILABLE` and
+continues the run normally. Forensic diagnostics are separate, bounded by
+run/window/allowlisted sources/session IDs, and opt-in.
+
 Use `schemas/cognitive-run-record.md` for observable audit evidence.
+
+When an audit, telemetry or diagnostic request asks for a preview, scope or
+closure, produce the bounded concrete artifact/template requested (with
+synthetic values clearly labelled when no runtime value exists), not only a
+policy summary. A template must never be presented as a host-observed result.
 
 ## Output
 

@@ -5,12 +5,15 @@ from __future__ import annotations
 
 import json
 import sys
+import argparse
 from pathlib import Path
 
 REQUIRED_KEYS = {"id", "prompt", "tags", "must", "must_not"}
+OPTIONAL_KEYS = {"critical"}
+V15_FAMILIES = {"CD", "RS", "GS", "SI", "TL", "PR", "HP", "DS", "MC", "RC"}
 
 
-def validate(path: Path) -> list[str]:
+def validate(path: Path, *, require_v1_5_family: bool = False) -> list[str]:
     errors: list[str] = []
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -30,6 +33,11 @@ def validate(path: Path) -> list[str]:
         if missing:
             errors.append(f"{label}: missing {sorted(missing)}")
             continue
+        unknown = set(case) - (REQUIRED_KEYS | OPTIONAL_KEYS)
+        if unknown:
+            errors.append(f"{label}: unknown keys {sorted(unknown)}")
+        if "critical" in case and not isinstance(case["critical"], bool):
+            errors.append(f"{label}: critical must be boolean")
         case_id = case["id"]
         if not isinstance(case_id, str) or not case_id.strip():
             errors.append(f"{label}: id must be a non-empty string")
@@ -43,15 +51,22 @@ def validate(path: Path) -> list[str]:
             value = case[key]
             if not isinstance(value, list) or not value or not all(isinstance(x, str) and x.strip() for x in value):
                 errors.append(f"{label}: {key} must be a non-empty list of non-empty strings")
+        if isinstance(case.get("tags"), list) and "v1.5" in case["tags"] and len(case["tags"]) < 2:
+            errors.append(f"{label}: v1.5 cases must identify a family tag")
+        if require_v1_5_family:
+            families = set(case.get("tags", [])) & V15_FAMILIES
+            if "v1.5" not in case.get("tags", []) or len(families) != 1:
+                errors.append(f"{label}: must contain exactly one V1.5 family tag from {sorted(V15_FAMILIES)}")
     return errors
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 2:
-        print("usage: validate_cases.py MANIFEST.json", file=sys.stderr)
-        return 2
-    path = Path(argv[1])
-    errors = validate(path)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("manifest", type=Path)
+    parser.add_argument("--family-v1-5", action="store_true")
+    args = parser.parse_args(argv[1:])
+    path = args.manifest
+    errors = validate(path, require_v1_5_family=args.family_v1_5)
     if errors:
         for error in errors:
             print(error, file=sys.stderr)

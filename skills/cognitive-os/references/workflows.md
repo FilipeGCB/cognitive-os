@@ -1,4 +1,4 @@
-# Workflows — Cognitive OS v1.4
+# Workflows — Cognitive OS v1.5
 
 Workflows compose only the lenses and capabilities needed for the current problem. Depth is controlled by routing; do not create duplicate workflows for depth variants.
 
@@ -93,6 +93,32 @@ need
 ```
 
 Discovery is not installation. Finding a tool does not prove that it is safe, available, invoked or appropriate.
+
+The `/capability` pipeline is material-gap driven: existing capability, local
+discovery, approved external discovery, candidate assessment, Gauntlet,
+consent, execution/installation and runtime verification. Find Skills/Find MCP
+are discovery assets, not candidates; `related_skills` is not a substitute for
+discovery. External discovery being unavailable is an explicit state with a
+fallback, never a simulated search result. Temporary external execution is
+subject to the same security and consent boundary as installation.
+
+### `/research` budget and migration
+
+Deep research begins with a budget contract and checkpoints. Reconsider Web →
+Grounded Corpus when source crossing, internal/external evidence, repeated
+queries, compaction/context pressure, convergence, traceability degradation or
+future revisitation makes a persistent corpus materially useful. NotebookLM is
+optional and host-dependent. At a hard search limit, freeze, synthesize the
+evidence already observed, mark the gap, select the next proof/fallback and
+close.
+
+### Full Flow/Audit V1.5 ledgers
+
+When requested, include Phase, Conditional Branch, Capability, Method,
+Evidence, Gap/Failure, Challenge, Mutation and Persistent Side Effects ledgers,
+plus research budget and provider/host failure summaries. Keep flow coverage,
+execution integrity, run status and decision state separate. Do not persist
+private chain-of-thought.
 
 ### Find Skills
 

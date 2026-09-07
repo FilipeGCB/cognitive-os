@@ -1,5 +1,39 @@
 {
-  "schema_version": "cognitive-os-adapter-registry-v1",
+  "schema_version": "cognitive-os-adapter-registry-v1.5",
+  "discovery_assets": [
+    {
+      "id": "find-skills-vercel",
+      "asset_type": "EXTERNAL_SKILL_DISCOVERY",
+      "source": "https://github.com/vercel-labs/skills",
+      "owner": "vercel-labs",
+      "repository": "vercel-labs/skills",
+      "maintainer": "Vercel Labs",
+      "version": "v1.5.23",
+      "license": "MIT",
+      "mechanism": "skills@1.5.23 / find-skills / npx skills find",
+      "hosts": ["hermes", "codex", "claude-code", "generic"],
+      "status": "APPROVED",
+      "identity_status": "PROVEN",
+      "provenance": "Verified against the public vercel-labs/skills repository and release v1.5.23 on 2026-09-05.",
+      "requires_consent": false
+    },
+    {
+      "id": "find-mcp-official-registry",
+      "asset_type": "EXTERNAL_MCP_DISCOVERY",
+      "source": "https://registry.modelcontextprotocol.io",
+      "owner": "modelcontextprotocol",
+      "repository": "modelcontextprotocol/registry",
+      "maintainer": "Model Context Protocol project",
+      "version": "v1.7.9",
+      "license": "Apache-2.0/MIT",
+      "mechanism": "GET /v0.1/servers?search=<query>&limit=<n>",
+      "hosts": ["hermes", "codex", "claude-code", "chatgpt-work", "generic"],
+      "status": "APPROVED",
+      "identity_status": "PROVEN",
+      "provenance": "Verified against the official Model Context Protocol Registry repository, production API and release v1.7.9 on 2026-09-05.",
+      "requires_consent": false
+    }
+  ],
   "adapters": [
     {
       "id": "notebooklm-py",

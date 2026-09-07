@@ -27,6 +27,13 @@ Do not create another parallel canonical decision model.
 - shareable/high-stakes decision → fuller Decision Brief + Decision Pack when useful;
 - Full Flow/Audit → human Brief plus structured audit artifacts when required.
 
+For a decision brief about an existing capability and a possible new audience,
+lead with a bounded decision (or decision condition), then name the audience,
+problem and expected outcome before describing any market opportunity. Keep
+mechanism, product, operation and market opportunity as separate claims. If
+the prompt does not supply a real case, label a compact illustrative scenario
+as hypothetical rather than presenting invented facts as validated evidence.
+
 ## Editorial hierarchy
 
 For a material decision, the reader should normally learn, in this order:

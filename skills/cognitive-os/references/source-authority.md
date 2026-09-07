@@ -1,4 +1,4 @@
-# Source Authority — Cognitive OS v1.4
+# Source Authority — Cognitive OS v1.5
 
 ## Software and technical systems
 
@@ -97,3 +97,21 @@ When sources materially disagree, show:
 ## Context
 
 Context helps reconstruct intent and history; it does not outrank observed implementation, approved canonical decisions or current primary evidence when those are materially relevant.
+
+## Truth-domain mapping
+
+Before inferring a cause from multiple systems, establish which system is
+authoritative for each fact class and reconcile mismatches first:
+
+| Fact class | Preferred authority | Common secondary | Do not equate automatically with |
+|---|---|---|---|
+| transaction | payment/ledger | commerce | behavior or order count |
+| order | commerce | payment/ledger | settlement |
+| behavior | analytics | commerce events | transactions |
+| pipeline | CRM | billing | recognized revenue |
+| software state | repository/tests | documentation | historical branch notes |
+| decision | versioned decision/spec | authorized internal sources | stale memory |
+
+The current verified state wins a stale document when the source authority for
+that question says it should. Record contradictions and the reconciliation
+method in the Evidence and Gap/Failure ledgers before causal interpretation.

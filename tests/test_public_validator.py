@@ -10,7 +10,7 @@ from validate_public_package import scan_text
 
 class PublicValidatorTests(unittest.TestCase):
     def test_scan_rejects_private_vault_marker(self):
-        findings = scan_text("source: FilipeGCB/obsidian-notes")
+        findings = scan_text("source: private-vault-repository-marker")
         self.assertTrue(findings)
 
     def test_scan_rejects_secret_like_token(self):

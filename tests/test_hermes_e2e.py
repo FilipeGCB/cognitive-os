@@ -1,8 +1,10 @@
 import inspect
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -40,6 +42,22 @@ class HermesE2EHarnessTests(unittest.TestCase):
         self.assertNotIn("also-secret", clean)
         self.assertIn("safe=line", clean)
         self.assertIn("[REDACTED]", clean)
+
+    def test_command_evidence_redacts_prompt_source_and_absolute_path(self):
+        result = h._min_command_result(
+            {
+                "command": [
+                    "hermes", "chat", "--source", "private-run-marker", "-q", "private prompt", "/private/scoped/file",
+                ],
+                "exit_code": 0,
+                "timed_out": False,
+                "stdout": "ok",
+                "stderr": "",
+            }
+        )
+        self.assertEqual(result["command"], ["hermes", "chat", "--source", "[CORRELATION_MARKER]", "-q", "[REDACTED_CONTENT]", "[SCOPED_PATH]"])
+        self.assertNotIn("private prompt", json.dumps(result))
+        self.assertNotIn("private-run-marker", json.dumps(result))
 
     def test_extract_tool_events_accepts_common_hermes_shapes(self):
         session = {
@@ -254,6 +272,92 @@ class HermesE2EHarnessTests(unittest.TestCase):
         self.assertEqual(h.reduce_gate(full), "PASS")
         full[2]["pass"] = False
         self.assertEqual(h.reduce_gate(full), "FAIL")
+
+    def test_mcp_case_never_selects_server_from_listing(self):
+        calls = []
+
+        def fake_run_command(cmd, **kwargs):
+            calls.append(cmd)
+            return {
+                "exit_code": 0,
+                "timed_out": False,
+                "stdout": "Configured servers: notebooklm\n",
+                "stderr": "",
+            }
+
+        with tempfile.TemporaryDirectory() as tmp, patch.object(h, "run_command", side_effect=fake_run_command):
+            record = h.run_mcp_case("cognitive-os-e2e", 60, Path(tmp), None)
+
+        self.assertFalse(record["pass"])
+        self.assertEqual(record["availability"], "UNKNOWN")
+        self.assertEqual(record["invocation"], "NOT_CALLED")
+        self.assertEqual([cmd[-2:] for cmd in calls], [["mcp", "list"]])
+
+    def test_run_auto_fails_when_critical_mcp_case_fails(self):
+        passing = {
+            "H14-E01": True,
+            "H14-E02": True,
+            "H14-E05": True,
+            "H14-E06": True,
+        }
+
+        def record(case_id):
+            return {"id": case_id, "pass": passing.get(case_id, False)}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.object(h, "preflight", return_value=record("H14-E01")), \
+                 patch.object(h, "run_web_case", return_value=record("H14-E02")), \
+                 patch.object(h, "run_mcp_case", return_value=record("H14-E03")), \
+                 patch.object(h, "run_untrusted_case", return_value=record("H14-E05")), \
+                 patch.object(h, "run_unavailable_case", return_value=record("H14-E06")):
+                exit_code = h.main([
+                    "run-auto",
+                    "--provider", "remote-test",
+                    "--model", "remote-sut",
+                    "--base-url", "https://provider.example/v1",
+                    "--out-dir", tmp,
+                ])
+
+        self.assertEqual(exit_code, 1)
+
+    def test_session_binding_rejects_stale_or_concurrent_export(self):
+        marker = "cognitive-os-e2e-20260904-120000-ABCD"
+        self.assertTrue(h.session_matches_correlation({"source": marker, "messages": []}, marker))
+        self.assertFalse(h.session_matches_correlation({"source": "older-run", "messages": []}, marker))
+
+    def test_run_context_is_host_shaped_and_candidate_bound(self):
+        with patch.object(h, "candidate_commit", return_value="a" * 40):
+            context = h.new_run_context()
+        self.assertRegex(context["run_id"], r"^CRR-[0-9]{8}-[0-9]{6}-[A-Z0-9]{8}$")
+        self.assertEqual(context["candidate_sha"], "a" * 40)
+        self.assertIn(context["correlation_marker"], h.build_chat_command("p", "q", ["skills"], source=context["correlation_marker"]))
+
+    def test_scoped_snapshot_detects_file_change_without_write_tool(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "skills" / "cognitive-os").mkdir(parents=True)
+            target = root / "skills" / "cognitive-os" / "SKILL.md"
+            target.write_text("before", encoding="utf-8")
+            before = h.snapshot_scoped_state(root)
+            target.write_text("after", encoding="utf-8")
+            after = h.snapshot_scoped_state(root)
+        change = h.snapshot_changes(before, after)
+        self.assertTrue(change["persistent_change"])
+        self.assertIn("skills/cognitive-os/SKILL.md", change["changed_paths"])
+
+    def test_hermes_provider_configuration_is_explicit_and_fail_closed(self):
+        configuration = h.resolve_provider_config(None, None, None)
+        self.assertFalse(configuration["configured"])
+        self.assertEqual(configuration["state"], "UNAVAILABLE")
+        self.assertIn("no provider", configuration["reason"].lower())
+        local = h.resolve_provider_config("ollama", "model", "https://provider.example/v1")
+        self.assertFalse(local["configured"])
+        self.assertIn("local providers", local["reason"])
+
+    def test_hermes_source_has_no_implicit_local_provider_defaults(self):
+        source = inspect.getsource(h)
+        for forbidden in ("DEFAULT_MODEL", "DEFAULT_BASE_URL", "127.0.0.1"):
+            self.assertNotIn(forbidden, source)
 
 
 if __name__ == "__main__":
