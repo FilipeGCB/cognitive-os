@@ -3,7 +3,7 @@
 Canonical policy: `FitaCFO/fita-operacao/00_gestao/governanca/GITHUB_ACTIONS_ECONOMY_POLICY.md`.
 
 Mandatory rules:
-- DEV-ONLY unless Filipe explicitly authorizes production/deploy.
+- Fita Cloud/CFO-IA remains DEV-ONLY. Other projects follow their own release/deploy policy.
 - Local first, remote once.
 - Do not push every micro-fix.
 - Do not use GitHub Actions as a development loop.
