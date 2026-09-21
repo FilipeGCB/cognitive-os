@@ -3,7 +3,7 @@
 Before publishing, read `docs/governance/GITHUB_ACTIONS_ECONOMY.md`.
 
 Mandatory:
-- DEV-ONLY unless Filipe explicitly authorizes production/deploy.
+- Fita Cloud/CFO-IA remains DEV-ONLY. Other projects follow their own release/deploy policy.
 - Local first, remote once.
 - Do not push micro-iterations to use GitHub Actions as a development loop.
 - Batch changes and run local gates first.
