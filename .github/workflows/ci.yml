@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -47,7 +47,7 @@ jobs:
         run: python -m compileall -q bootstrap evals renderers tests tools
 
   install-smoke:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       DISABLE_TELEMETRY: '1'
     steps:
@@ -73,7 +73,7 @@ jobs:
           test -f .agents/skills/cognitive-os/SKILL.md
 
   notebooklm-adapter-smoke:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -89,7 +89,7 @@ jobs:
           notebooklm-mcp --help >/dev/null
 
   secret-scan:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout full history
         uses: actions/checkout@v6
