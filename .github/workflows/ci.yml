@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -70,7 +70,7 @@ jobs:
         run: python -m compileall -q bootstrap evals renderers telemetry tests tools skills/cognitive-os/scripts
 
   install-smoke:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       DISABLE_TELEMETRY: '1'
     steps:
@@ -129,7 +129,7 @@ jobs:
             --artifact gemini="$RUNNER_TEMP/cognitive-os-distributions/gemini"
 
   claude-plugin-validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -141,7 +141,7 @@ jobs:
         run: claude plugin validate .
 
   notebooklm-adapter-smoke:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -157,7 +157,7 @@ jobs:
           notebooklm-mcp --help >/dev/null
 
   secret-scan:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout full history
         uses: actions/checkout@v6
